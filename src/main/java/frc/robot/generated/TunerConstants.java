@@ -2,6 +2,7 @@ package frc.robot.generated;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -23,12 +24,12 @@ public class TunerConstants {
     // output type specified by SwerveModuleConstants.SteerMotorClosedLoopOutput
     private static final Slot0Configs steerGains = new Slot0Configs()
         .withKP(100).withKI(0).withKD(0.2)
-        .withKS(0).withKV(1.5).withKA(0);
+        .withKS(0.25).withKV(1.5).withKA(0);
     // When using closed-loop control, the drive motor uses the control
     // output type specified by SwerveModuleConstants.DriveMotorClosedLoopOutput
     private static final Slot0Configs driveGains = new Slot0Configs()
         .withKP(3).withKI(0).withKD(0)
-        .withKS(0).withKV(0).withKA(0);
+        .withKS(1.5).withKV(0).withKA(0.08);
 
     // The closed-loop output type to use for the steer motors;
     // This affects the PID/FF gains for the steer motors
@@ -43,14 +44,24 @@ public class TunerConstants {
 
     // Initial configs for the drive and steer motors and the CANcoder; these cannot be null.
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
-    private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration();
+    private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration()
+        .withCurrentLimits(
+            new CurrentLimitsConfigs()
+                // Swerve drive requires a lot of torque output, so we can set a relatively high
+                // stator current limit to help avoid brownouts without impacting performance.
+                .withStatorCurrentLimit(100)    // CTR: 120A
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(70)
+                .withSupplyCurrentLimitEnable(true)
+        );
     private static final TalonFXConfiguration steerInitialConfigs = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
                 // Swerve azimuth does not require much torque output, so we can set a relatively low
                 // stator current limit to help avoid brownouts without impacting performance.
-                .withStatorCurrentLimit(60)
+                .withStatorCurrentLimit(40)
                 .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimitEnable(false)
         );
     private static final CANcoderConfiguration cancoderInitialConfigs = new CANcoderConfiguration();
     // Configs for the Pigeon 2; leave this null to skip applying Pigeon 2 configs
@@ -71,8 +82,8 @@ public class TunerConstants {
     private static final boolean kInvertLeftSide = false;
     private static final boolean kInvertRightSide = true;
 
-    private static final String kCANbusName = "";
-    private static final int kPigeonId = 0;
+    private static final String kCANbusName = "canivore";
+    private static final int kPigeonId = 20;
 
 
     // These are only used for simulation
@@ -93,15 +104,15 @@ public class TunerConstants {
             .withWheelRadius(kWheelRadiusInches)
             .withSlipCurrent(kSlipCurrentA)
             .withSteerMotorGains(steerGains)
-            .withDriveMotorGains(driveGains)
             .withSteerMotorClosedLoopOutput(steerClosedLoopOutput)
+            .withDriveMotorGains(driveGains)
             .withDriveMotorClosedLoopOutput(driveClosedLoopOutput)
             .withSpeedAt12VoltsMps(kSpeedAt12VoltsMps)
             .withSteerInertia(kSteerInertia)
             .withDriveInertia(kDriveInertia)
             .withSteerFrictionVoltage(kSteerFrictionVoltage)
             .withDriveFrictionVoltage(kDriveFrictionVoltage)
-            .withFeedbackSource(SteerFeedbackType.SyncCANcoder)
+            .withFeedbackSource(SteerFeedbackType.FusedCANcoder)
             .withCouplingGearRatio(kCoupleRatio)
             .withDriveMotorInitialConfigs(driveInitialConfigs)
             .withSteerMotorInitialConfigs(steerInitialConfigs)
@@ -112,41 +123,41 @@ public class TunerConstants {
     private static final int kFrontLeftDriveMotorId = 2;
     private static final int kFrontLeftSteerMotorId = 1;
     private static final int kFrontLeftEncoderId = 0;
-    private static final double kFrontLeftEncoderOffset = -0.36962890625;
-    private static final boolean kFrontLeftSteerInvert = true;
+    private static final double kFrontLeftEncoderOffset = -0.466552734375;
+    private static final boolean kFrontLeftSteerInvert = false;
 
-    private static final double kFrontLeftXPosInches = 11.41732283465;
-    private static final double kFrontLeftYPosInches = 11.41732283465;
+    private static final double kFrontLeftXPosInches = 8.66141732;      // Front to back (half)
+    private static final double kFrontLeftYPosInches = 10.1377953;      // Left to Right (half)
 
     // Front Right
-    private static final int kFrontRightDriveMotorId = 4;
-    private static final int kFrontRightSteerMotorId = 3;
-    private static final int kFrontRightEncoderId = 1;
-    private static final double kFrontRightEncoderOffset = 0.290771484375;
-    private static final boolean kFrontRightSteerInvert = true;
+    private static final int kFrontRightDriveMotorId = 5;
+    private static final int kFrontRightSteerMotorId = 4;
+    private static final int kFrontRightEncoderId = 3;
+    private static final double kFrontRightEncoderOffset = 0.046630859375;
+    private static final boolean kFrontRightSteerInvert = false;
 
-    private static final double kFrontRightXPosInches = 11.41732283465;
-    private static final double kFrontRightYPosInches = -11.41732283465;
+    private static final double kFrontRightXPosInches = 8.66141732;
+    private static final double kFrontRightYPosInches = -10.1377953;
 
     // Back Left
     private static final int kBackLeftDriveMotorId = 8;
     private static final int kBackLeftSteerMotorId = 7;
-    private static final int kBackLeftEncoderId = 3;
-    private static final double kBackLeftEncoderOffset = -0.45947265625;
-    private static final boolean kBackLeftSteerInvert = true;
+    private static final int kBackLeftEncoderId = 6;
+    private static final double kBackLeftEncoderOffset = -0.363525390625;
+    private static final boolean kBackLeftSteerInvert = false;
 
-    private static final double kBackLeftXPosInches = -11.41732283465;
-    private static final double kBackLeftYPosInches = 11.41732283465;
+    private static final double kBackLeftXPosInches = -8.66141732;
+    private static final double kBackLeftYPosInches = 10.1377953;
 
     // Back Right
-    private static final int kBackRightDriveMotorId = 6;
-    private static final int kBackRightSteerMotorId = 5;
-    private static final int kBackRightEncoderId = 2;
-    private static final double kBackRightEncoderOffset = -0.34716796875;
-    private static final boolean kBackRightSteerInvert = true;
+    private static final int kBackRightDriveMotorId = 11;
+    private static final int kBackRightSteerMotorId = 10;
+    private static final int kBackRightEncoderId = 9;
+    private static final double kBackRightEncoderOffset = 0.401123046875;
+    private static final boolean kBackRightSteerInvert = false;
 
-    private static final double kBackRightXPosInches = -11.41732283465;
-    private static final double kBackRightYPosInches = -11.41732283465;
+    private static final double kBackRightXPosInches = -8.66141732;
+    private static final double kBackRightYPosInches = -10.1377953;
 
 
     private static final SwerveModuleConstants FrontLeft = ConstantCreator.createModuleConstants(
