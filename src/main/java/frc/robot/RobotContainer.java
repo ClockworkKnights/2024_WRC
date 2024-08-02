@@ -16,7 +16,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Swerve;
+import frc.robot.subsystems.Intake;
 
 public class RobotContainer {
   private double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
@@ -26,7 +27,8 @@ public class RobotContainer {
 
   /* Setting up bindings for necessary control of the swerve drive platform */
   private final CommandPS5Controller joystick = new CommandPS5Controller(0); // My joystick
-  private final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain; // My drivetrain
+  private final Swerve drivetrain = TunerConstants.DriveTrain; // My drivetrain
+  private final Intake Intake = new Intake(); // My intake
 
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
@@ -49,12 +51,19 @@ public class RobotContainer {
             .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
         ));
 
-    joystick.circle().whileTrue(drivetrain.applyRequest(() -> brake));
-    joystick.square().whileTrue(drivetrain
+    joystick.cross().whileTrue(drivetrain.applyRequest(() -> brake));
+    joystick.circle().whileTrue(drivetrain
         .applyRequest(() -> point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))));
 
     // reset the field-centric heading on left bumper press
-    joystick.L3().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
+    // joystick.L3().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
+    
+    // Intake in
+    joystick.R2().onTrue(Commands.runOnce(() -> Intake.eat_in()));
+    joystick.R2().onFalse(Commands.runOnce(() -> Intake.stop()));
+    // Intake out
+    joystick.R1().onTrue(Commands.runOnce(() -> Intake.eat_out()));
+    joystick.R1().onFalse(Commands.runOnce(() -> Intake.stop()));
 
     if (Utils.isSimulation()) {
       drivetrain.seedFieldRelative(new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90)));
