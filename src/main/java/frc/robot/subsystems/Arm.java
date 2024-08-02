@@ -1,7 +1,5 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
-import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
@@ -37,7 +35,7 @@ public class Arm implements Subsystem {
         m_Arm_L = new TalonFX(12, "canivore");
         m_Arm_R = new TalonFX(13, "canivore");
 
-        positionRequest = new DynamicMotionMagicVoltage(0, 100, 400, 800).withEnableFOC(false);
+        positionRequest = new DynamicMotionMagicVoltage(0, 100, 400, 4000).withEnableFOC(false);
         voltageRequest = new VoltageOut(0).withEnableFOC(false);
         right_follow_left = new Follower(12, true);
 
@@ -144,7 +142,7 @@ public class Arm implements Subsystem {
     }
 
     public void arm_down_volt(boolean limitSwitch) {
-        setVoltage(-1.4);
+        setVoltage(-1);
 
         if (ArmConfig_L.SoftwareLimitSwitch.ReverseSoftLimitEnable != limitSwitch) {
             ArmConfig_L.SoftwareLimitSwitch.ReverseSoftLimitEnable = limitSwitch;
@@ -164,11 +162,19 @@ public class Arm implements Subsystem {
     }
 
     public void arm_up() {
-        setPosition(21);
+        setPosition(8);
     }
 
     public void arm_down() {
-        setPosition(0.2);
+        setPosition(0.6);
+    }
+
+    public boolean is_up() {
+        return m_Arm_L.getPosition().getValueAsDouble() > 3;
+    }
+
+    public boolean is_down() {
+        return m_Arm_L.getPosition().getValueAsDouble() <= 3;
     }
 
     public void setPosition(double position) {
@@ -180,9 +186,9 @@ public class Arm implements Subsystem {
         setVoltage(0);
     }
 
-    public void log() {
-        System.out.println("Arm_L: " + m_Arm_L.getPosition());
-        System.out.println("Arm_R: " + m_Arm_R.getPosition());
-    }
+    // public void log() {
+    //     System.out.println("Arm_L: " + m_Arm_L.getPosition());
+    //     System.out.println("Arm_R: " + m_Arm_R.getPosition());
+    // }
 
 }

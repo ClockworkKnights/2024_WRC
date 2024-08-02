@@ -19,6 +19,8 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Arm;
+import frc.robot.subsystems.Shooter;
+import frc.robot.commands.AimShoot;
 
 public class RobotContainer {
   private double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
@@ -31,6 +33,9 @@ public class RobotContainer {
   private final Swerve drivetrain = TunerConstants.DriveTrain; // My drivetrain
   private final Intake intake = new Intake(); // My intake
   private final Arm arm = new Arm();
+  private final Shooter shooter = new Shooter();
+
+  private Command AimShoot = new AimShoot();
 
   private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
       .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
@@ -58,7 +63,7 @@ public class RobotContainer {
         .applyRequest(() -> point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))));
 
     // reset the field-centric heading on left bumper press
-    // joystick.L3().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
+    joystick.L3().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
     
     // Intake in
     joystick.R2().onTrue(Commands.runOnce(() -> intake.eat_in()));
@@ -73,8 +78,13 @@ public class RobotContainer {
     joystick.povDown().onTrue(Commands.runOnce(() -> arm.arm_down_volt(false)));
     joystick.povDown().onFalse(Commands.runOnce(() -> arm.stop()));
 
-    joystick.L1().onTrue(Commands.runOnce(() -> arm.arm_up()));
-    joystick.L2().onTrue(Commands.runOnce(() -> arm.arm_down()));
+    joystick.L2().onTrue(Commands.runOnce(() -> arm.arm_up()));
+    joystick.L2().onFalse(Commands.runOnce(() -> arm.arm_down()));
+
+    // joystick.L1().onTrue(Commands.runOnce(() -> shooter.shoot_out()));
+    // joystick.L1().onFalse(Commands.runOnce(() -> shooter.shoot_break()));
+
+    joystick.L1().whileTrue(AimShoot);
     
     if (Utils.isSimulation()) {
       drivetrain.seedFieldRelative(new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90)));
