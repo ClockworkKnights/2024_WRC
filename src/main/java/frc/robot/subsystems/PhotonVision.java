@@ -56,47 +56,47 @@ public class PhotonVision extends SubsystemBase  {
 
     @Override
     public void periodic() {
-        boolean doRejectUpdate = false;
-        EstimatedRobotPose pose_gray = null;
-        EstimatedRobotPose pose_color = null;
-        try {
-            pose_gray = pose_estimator_gray.update().get();
-        } catch (Exception e) {
-        }
-        try {
-            pose_color = pose_estimator_color.update().get();
-        } catch (Exception e) {
-        }
+        // boolean doRejectUpdate = false;
+        // EstimatedRobotPose pose_gray = null;
+        // EstimatedRobotPose pose_color = null;
+        // try {
+        //     pose_gray = pose_estimator_gray.update().get();
+        // } catch (Exception e) {
+        // }
+        // try {
+        //     pose_color = pose_estimator_color.update().get();
+        // } catch (Exception e) {
+        // }
 
-        m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(.7, .7, 9999999));
+        // m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(.7, .7, 9999999));
 
-        if (Math.abs(m_gyro.getRate()) > 720) // if our angular velocity is greater than 720 degrees per second, ignore
-                                              // vision updates
-        {
-            doRejectUpdate = true;
-        }
+        // if (Math.abs(m_gyro.getRate()) > 720) // if our angular velocity is greater than 720 degrees per second, ignore
+        //                                       // vision updates
+        // {
+        //     doRejectUpdate = true;
+        // }
 
-        if (!doRejectUpdate) {
-            if (pose_gray != null) {
-                m_swerve.addVisionMeasurement(
-                        pose_gray.estimatedPose.toPose2d(),
-                        pose_gray.timestampSeconds);
-                graypub.set(new double[] {
-                    pose_gray.estimatedPose.getTranslation().getX(),
-                    pose_gray.estimatedPose.getTranslation().getY(),
-                    pose_gray.estimatedPose.getRotation().toRotation2d().getDegrees()
-                });
-            }
-            if (pose_color != null) {
-                m_swerve.addVisionMeasurement(
-                        pose_color.estimatedPose.toPose2d(),
-                        pose_color.timestampSeconds);
-                colorpub.set(new double[] {
-                    pose_color.estimatedPose.getTranslation().getX(),
-                    pose_color.estimatedPose.getTranslation().getY(),
-                    pose_color.estimatedPose.getRotation().toRotation2d().getDegrees()
-                });
-            }
-        }
+        // if (!doRejectUpdate) {
+        //     if (pose_gray != null) {
+        //         m_swerve.addVisionMeasurement(
+        //                 pose_gray.estimatedPose.toPose2d(),
+        //                 pose_gray.timestampSeconds);
+        //         graypub.set(new double[] {
+        //             pose_gray.estimatedPose.getTranslation().getX(),
+        //             pose_gray.estimatedPose.getTranslation().getY(),
+        //             pose_gray.estimatedPose.getRotation().toRotation2d().getDegrees()
+        //         });
+        //     }
+        //     if (pose_color != null) {
+        //         m_swerve.addVisionMeasurement(
+        //                 pose_color.estimatedPose.toPose2d(),
+        //                 pose_color.timestampSeconds);
+        //         colorpub.set(new double[] {
+        //             pose_color.estimatedPose.getTranslation().getX(),
+        //             pose_color.estimatedPose.getTranslation().getY(),
+        //             pose_color.estimatedPose.getRotation().toRotation2d().getDegrees()
+        //         });
+        //     }
+        // }
     }
 }

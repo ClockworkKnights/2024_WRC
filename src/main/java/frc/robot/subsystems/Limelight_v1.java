@@ -22,6 +22,8 @@ public class Limelight_v1 extends SubsystemBase {
 
     private Pose2d m_lastPose = new Pose2d();
 
+    private static boolean first_pose = true;
+
     public Limelight_v1() {
     }
 
@@ -40,13 +42,28 @@ public class Limelight_v1 extends SubsystemBase {
         if (mt1.tagCount == 0) {
             doRejectUpdate = true;
         }
+        var pose = mt1.pose;
+        var timestamp = mt1.timestampSeconds;
+        if (pose.getX() < 0 || pose.getX() > 16.8 || pose.getY() < 0 || pose.getY() > 8.4) {
+            doRejectUpdate = true;
+        }
 
         if (!doRejectUpdate) {
-            m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(100, 100, 999));
+            double dev_dist = Math.exp(1.5716*mt1.rawFiducials[0].distToCamera)*0.0774;
+            double dev_amb = Math.exp(7.2861*mt1.rawFiducials[0].ambiguity)*0.5818;
+            double dev = Math.max(dev_dist, dev_amb);
+            double dev_yaw = dev;
+            if (first_pose)
+            {
+                dev = 0.001;
+                dev_yaw = 9;
+                first_pose = false;
+            }
+            m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(dev/16, dev/16, dev_yaw));
             m_swerve.addVisionMeasurement(
-                    mt1.pose,
-                    mt1.timestampSeconds);
-            this.m_lastPose = mt1.pose;
+                    pose,
+                    timestamp);
+            this.m_lastPose = pose;
         }
 
         limelightPub.set(new double[] {

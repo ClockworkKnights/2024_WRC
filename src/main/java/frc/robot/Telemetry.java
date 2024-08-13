@@ -52,7 +52,7 @@ public class Telemetry {
     private final DoublePublisher yaw_setPoint = autoAim.getDoubleTopic("yaw_setPoint").publish();
     private final DoublePublisher yaw_now = autoAim.getDoubleTopic("yaw_now").publish();
     private final DoublePublisher yaw_controller_output = autoAim.getDoubleTopic("yaw_controller_output").publish();    
-    
+
     /* Keep a reference of the last pose to calculate the speeds */
     private Pose2d m_lastPose = new Pose2d();
     private double lastTime = Utils.getCurrentTimeSeconds();
@@ -120,4 +120,5 @@ public class Telemetry {
             SmartDashboard.putData("Module " + i, m_moduleMechanisms[i]);
         }
     }
+
 }

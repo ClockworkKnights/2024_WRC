@@ -27,7 +27,7 @@ public class TunerConstants {
     // When using closed-loop control, the drive motor uses the control
     // output type specified by SwerveModuleConstants.DriveMotorClosedLoopOutput
     private static final Slot0Configs driveGains = new Slot0Configs()
-        .withKP(3).withKI(0).withKD(0)
+        .withKP(5).withKI(0).withKD(0)
         .withKS(1.5).withKV(0).withKA(0.08);
 
     // The closed-loop output type to use for the steer motors;
@@ -39,7 +39,7 @@ public class TunerConstants {
 
     // The stator current at which the wheels start to slip;
     // This needs to be tuned to your individual robot
-    private static final double kSlipCurrentA = 150.0;          // 150.0
+    private static final double kSlipCurrentA = 35.0;          // 150.0
 
     // Initial configs for the drive and steer motors and the CANcoder; these cannot be null.
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
@@ -48,10 +48,10 @@ public class TunerConstants {
             new CurrentLimitsConfigs()
                 // Swerve drive requires a lot of torque output, so we can set a relatively high
                 // stator current limit to help avoid brownouts without impacting performance.
-                .withStatorCurrentLimit(100)    // CTR: 120A
-                .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(70)
-                .withSupplyCurrentLimitEnable(true)
+                // .withStatorCurrentLimit(100)    // CTR: 120A
+                // .withStatorCurrentLimitEnable(true)
+                // .withSupplyCurrentLimit(70)
+                // .withSupplyCurrentLimitEnable(true)
         );
     private static final TalonFXConfiguration steerInitialConfigs = new TalonFXConfiguration()
         .withCurrentLimits(
@@ -59,7 +59,7 @@ public class TunerConstants {
                 // Swerve azimuth does not require much torque output, so we can set a relatively low
                 // stator current limit to help avoid brownouts without impacting performance.
                 .withStatorCurrentLimit(40)
-                .withStatorCurrentLimitEnable(true)
+                .withStatorCurrentLimitEnable(false)
                 .withSupplyCurrentLimitEnable(false)
         );
     private static final CANcoderConfiguration cancoderInitialConfigs = new CANcoderConfiguration();
@@ -68,7 +68,7 @@ public class TunerConstants {
 
     // Theoretical free speed (m/s) at 12v applied output;
     // This needs to be tuned to your individual robot
-    public static final double kSpeedAt12VoltsMps = 4.73;
+    public static final double kSpeedAt12VoltsMps = 4.25;
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot

@@ -39,12 +39,12 @@ public class Limelight_v2 extends SubsystemBase {
             doRejectUpdate = true;
         }
         if (!doRejectUpdate) {
-            var stddev = VecBuilder.fill(.7, .7, 99);
+            var stddev = VecBuilder.fill(.7, .7, 999);
             if (mt2.tagCount == 1) {
-                stddev = VecBuilder.fill(50, 50, 999999);
+                stddev = VecBuilder.fill(5, 5, 999999);
             }
             if (mt2.tagCount == 2) {
-                stddev = VecBuilder.fill(2, 2, 999);
+                stddev = VecBuilder.fill(1, 1, 9999);
             }
             m_swerve.setVisionMeasurementStdDevs(stddev);
             m_swerve.addVisionMeasurement(

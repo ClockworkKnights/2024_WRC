@@ -25,6 +25,8 @@ public class Arm extends SubsystemBase {
 
     public static double arm_autoaim_target = 1;
 
+    public boolean arm_down_flag = false;
+
     TalonFXConfiguration ArmConfig_L;
     TalonFXConfiguration ArmConfig_R;
 
@@ -36,7 +38,7 @@ public class Arm extends SubsystemBase {
 
     public Arm() {
 
-        positionRequest = new DynamicMotionMagicVoltage(0, 100, 400, 4000).withEnableFOC(false);
+        positionRequest = new DynamicMotionMagicVoltage(0, 100, 300, 3000).withEnableFOC(true);
         voltageRequest = new VoltageOut(0).withEnableFOC(false);
         right_follow_left = new Follower(12, true);
 
@@ -57,8 +59,8 @@ public class Arm extends SubsystemBase {
                 .withSlot0(new Slot0Configs()
                         .withKP(2)
                         .withKI(0)
-                        .withKD(0.1)
-                        .withKS(0.2)
+                        .withKD(0.2)
+                        .withKS(0)
                         .withKV(0.148258)
                         .withKA(0.01)
                         .withKG(0)
@@ -88,8 +90,8 @@ public class Arm extends SubsystemBase {
                 .withSlot0(new Slot0Configs()
                         .withKP(2)
                         .withKI(0)
-                        .withKD(0.1)
-                        .withKS(0.2)
+                        .withKD(0.2)
+                        .withKS(0)
                         .withKV(0.148258)
                         .withKA(0.01)
                         .withKG(0)
@@ -172,6 +174,7 @@ public class Arm extends SubsystemBase {
 
     public void arm_down() {
         setPosition(0.6);
+        arm_down_flag = true;
     }
 
     public void arm_pos_magic(double pos, double max_vel, double accel, double jerk) {
@@ -221,7 +224,10 @@ public class Arm extends SubsystemBase {
 
     @Override
     public void periodic() {
-        
+        if (arm_down_flag && m_Arm_L.getPosition().getValueAsDouble() < 1) {
+            stop();
+            arm_down_flag = false;
+        }
     }
 
 }

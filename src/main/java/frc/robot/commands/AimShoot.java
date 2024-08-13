@@ -1,7 +1,10 @@
 package frc.robot.commands;
 
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.RobotContainer;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
@@ -11,8 +14,6 @@ public class AimShoot extends Command {
     private final Shooter shooter;
     private final Arm arm;
     private final Intake intake;
-
-    private double intakeL_startPos;
 
     private enum State {
         INTAKE_REVERSE,
@@ -29,9 +30,9 @@ public class AimShoot extends Command {
 
     public AimShoot() {
         // Use addRequirements() here to declare subsystem dependencies.
-        shooter = new Shooter();
-        arm = new Arm();
-        intake = new Intake();
+        shooter = RobotContainer.shooter;
+        arm = RobotContainer.arm;
+        intake = RobotContainer.intake;
         addRequirements(shooter, arm, intake);
         state = State.FINISHED;
     }
@@ -44,9 +45,8 @@ public class AimShoot extends Command {
         intake.stop();
 
         // Reverse the intake
-        intakeL_startPos = intake.getPosition_L();
-        if (intake.getState() != Intake.State.REVERSED){
-            intake.reverse_once();
+        if (intake.getState() != Intake.State.POS_WAIT_STOP && intake.getState() != Intake.State.EATED_REVERSED) {
+            intake.reverse_once_pos(1);
             state = State.INTAKE_REVERSE;
         }
         else {
@@ -59,9 +59,8 @@ public class AimShoot extends Command {
     public void execute() {
         switch (state) {
             case INTAKE_REVERSE:
-                if (arm.is_up() && intakeL_startPos - intake.getPosition_L() > 0.8) {
-                    state = State.SHOOTER_SHOOT;
-                    shooter.shoot_autoaim();
+                if (intake.getState() == Intake.State.EATED_REVERSED) {
+                    state = State.ARM_UP; 
                 }
                 break;
             case ARM_UP:
@@ -72,9 +71,9 @@ public class AimShoot extends Command {
                 break;
             case SHOOTER_SHOOT:
                 shooter.shoot_autoaim();
-                if (shooter.speed_ready_autoaim()){
+                if (shooter.speed_ready_autoaim() && RobotController.getBatteryVoltage() > 10.5){
                     state = State.INTAKE_DELIVER;
-                    intake.eat_in();
+                    intake.eat_volt(10);
                     timer.reset();
                     timer.start();
                 }

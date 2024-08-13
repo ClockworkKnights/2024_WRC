@@ -1,7 +1,10 @@
 package frc.robot.commands;
 
+import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest.RobotCentric;
+
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.RobotContainer;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
@@ -27,9 +30,9 @@ public class DoAmp extends Command {
 
     public DoAmp() {
         // Use addRequirements() here to declare subsystem dependencies.
-        shooter = new Shooter();
-        arm = new Arm();
-        intake = new Intake();
+        shooter = RobotContainer.shooter;
+        arm = RobotContainer.arm;   
+        intake = RobotContainer.intake;
         addRequirements(shooter, arm, intake);
         state = State.FINISHED;
     }
@@ -40,7 +43,7 @@ public class DoAmp extends Command {
         arm.arm_pos_magic(ARM_STAGE_1, 100, 300, 900);
         shooter.shoot_break();
         intake.stop();
-        if (intake.getState() != Intake.State.REVERSED){
+        if (intake.getState() != Intake.State.EATED_REVERSED){
             intake.reverse_once();
         }
         state = State.ARM_UP;

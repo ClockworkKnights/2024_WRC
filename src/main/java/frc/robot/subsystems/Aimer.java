@@ -11,11 +11,12 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
 import frc.robot.generated.TunerConstants;
 
 public class Aimer extends SubsystemBase {
 
-    private static final Limelight_v2 limelight = new Limelight_v2();
+    // private static final Limelight_v1 limelight = RobotContainer.limelight;
     // private static final PhotonVision photonVision = new PhotonVision();
 
     Pose3d targetSpeaker = new Pose3d();
@@ -40,12 +41,9 @@ public class Aimer extends SubsystemBase {
     private final NetworkTable table = inst.getTable("Aimer");
     private final DoubleArrayPublisher speakerPub = table.getDoubleArrayTopic("speaker_target").publish();
     private final DoubleArrayPublisher shooterPub = table.getDoubleArrayTopic("Shooter").publish();
-
-    private final NetworkTable table_arm = table.getSubTable("Arm");
-    private final DoublePublisher arm_target_pub = table_arm.getDoubleTopic("arm_target").publish();
-    private final DoublePublisher arm_now_pub = table_arm.getDoubleTopic("arm_now").publish();
-    private final DoublePublisher arm_error_pub = table_arm.getDoubleTopic("arm_error").publish();
-    private final DoublePublisher arm_output = table_arm.getDoubleTopic("arm_output").publish();
+    private final DoublePublisher speakerDistPub = table.getDoubleTopic("speaker_distance").publish();
+    private final DoublePublisher arm_target_pub = table.getDoubleTopic("arm_target").publish();
+    private final DoublePublisher shooter_target_pub = table.getDoubleTopic("shooter_target").publish();
 
 
     public Aimer() {
@@ -104,15 +102,28 @@ public class Aimer extends SubsystemBase {
         Rotation2d target_heading_rot = new Rotation2d(target_heading);
         m_swerve.yaw_setpoint = target_heading_rot.getDegrees();        // -180~180, 0 points to right, right hand coordinate
 
-        double arm_angle = Math.atan2(target_height, Math.sqrt(Math.pow(target_x_new - swerve_x, 2) + Math.pow(target_y_new - swerve_y, 2)));
-        double arm_angle_deg = arm_angle * 180 / Math.PI + dist_angle_compensation;
-        double arm_sensor_target = arm_angle_deg * arm_90deg_rot / 90;
+        
+        double shooter_target = 40 + 8 * distance; // 40m/s + 0.5m/s/m * distance
+        
+        // double arm_angle = Math.atan2(target_height, Math.sqrt(Math.pow(target_x_new - swerve_x, 2) + Math.pow(target_y_new - swerve_y, 2)));
+        // double arm_angle_deg = arm_angle * 180 / Math.PI + dist_angle_compensation;
+        // if (shooter_target > 80) {
+        //     arm_angle_deg += (shooter_target - 80)/8;
+        // }
+        // double arm_sensor_target = arm_angle_deg * arm_90deg_rot / 90;
+        double x = distance;
+        double arm_sensor_target = 0.00910581 *x*x*x*x - 0.23298615 *x*x*x + 2.17574395 *x*x - 9.45186811 *x + 22.19559391;
+        
         Arm.arm_autoaim_target = arm_sensor_target;
+        arm_target_pub.set(arm_sensor_target);
 
-        double shooter_target = 40 + 6 * distance; // 40m/s + 0.5m/s/m * distance
+        if (shooter_target > 80) {
+            shooter_target = 80;
+        }
+        speakerDistPub.set(distance);
         Shooter.shooter_autoaim_target = shooter_target;
+        shooter_target_pub.set(shooter_target);
 
-        arm_target_pub.set(arm_angle_deg);
         
     }
 

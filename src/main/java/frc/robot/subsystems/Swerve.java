@@ -9,11 +9,18 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
@@ -64,6 +71,11 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             .withDriveRequestType(DriveRequestType.Velocity) // I want field-centric
                                                              // driving in open loop
             .withSteerRequestType(SteerRequestType.MotionMagic);
+    public static final SwerveRequest.RobotCentric drive_RobotRelative = new SwerveRequest.RobotCentric()
+            .withDeadband(0).withRotationalDeadband(0) // Add a 10% deadband
+            .withDriveRequestType(DriveRequestType.Velocity) // I want robot-centric
+                                                             // driving in open loop
+            .withSteerRequestType(SteerRequestType.MotionMagic);
     public static final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     public static final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
@@ -74,13 +86,103 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean hasAppliedOperatorPerspective = false;
 
+    public void resetPosition(Pose2d poseMeters) {
+        // SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
+        // for (int i = 0; i < 4; i++) {
+        //     modulePositions[i] = this.getModule(i).getCachedPosition();
+        // }
+
+        // // System.out.println("Reset Position: " + poseMeters.getX() + " " + poseMeters.getY() + " "
+        //         // + poseMeters.getRotation().getDegrees());
+        // this.m_odometry.resetPosition(this.getPigeon2().getRotation2d(), modulePositions, poseMeters);
+    }
+
+    public void driveRobotRelative(ChassisSpeeds speeds) {
+        this.setControl(drive_RobotRelative.withVelocityX(speeds.vxMetersPerSecond)
+                .withVelocityY(speeds.vyMetersPerSecond).withRotationalRate(speeds.omegaRadiansPerSecond));
+        // System.out.println("Drive Robot Relative: " + speeds.vxMetersPerSecond + " " + speeds.vyMetersPerSecond + " "
+        //         + speeds.omegaRadiansPerSecond);
+    }
+
+    public Pose2d getPose() {
+        // System.out.println("Pose get: " + this.getState().Pose.getX() + " " + this.getState().Pose.getY() + " "
+        //         + this.getState().Pose.getRotation().getDegrees());
+        var state = this.getState();
+        return state.Pose;
+    }
+
+    public ChassisSpeeds getSpeeds() {
+        // System.out.println("Speeds get: " + this.getState().speeds.vxMetersPerSecond + " "
+        //         + this.getState().speeds.vyMetersPerSecond + " " + this.getState().speeds.omegaRadiansPerSecond);
+        return this.getState().speeds;
+    }
+
     public Swerve(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency,
             SwerveModuleConstants... modules) {
         super(driveTrainConstants, OdometryUpdateFrequency, modules);
+
+        // AutoBuilder.configureHolonomic(
+        // this::getPose, // Robot pose supplier
+        // this::resetPosition, // Method to reset odometry (will be called if your auto
+        // has a starting pose)
+        // this::getSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+        // this::driveRobotRelative, // Method that will drive the robot given ROBOT
+        // RELATIVE ChassisSpeeds
+        // new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should
+        // likely live in your
+        // // Constants class
+        // new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
+        // new PIDConstants(5.0, 0.0, 0.0), // Rotation PID constants
+        // 4.5, // Max module speed, in m/s
+        // 0.4, // Drive base radius in meters. Distance from robot center to furthest
+        // module.
+        // new ReplanningConfig() // Default path replanning config. See the API for the
+        // options here
+        // ),
+        // () -> {
+        // // Boolean supplier that controls when the path will be mirrored for the red
+        // // alliance
+        // // This will flip the path being followed to the red side of the field.
+        // // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+        // var alliance = DriverStation.getAlliance();
+        // if (alliance.isPresent()) {
+        // return alliance.get() == DriverStation.Alliance.Red;
+        // }
+        // return false;
+        // },
+        // this // Reference to this subsystem to set requirements
+        // );
     }
 
     public Swerve(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) {
         super(driveTrainConstants, modules);
+
+        AutoBuilder.configureHolonomic(
+                this::getPose, // Robot pose supplier
+                this::resetPosition, // Method to reset odometry (will be called if your auto has a starting pose)
+                this::getSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+                this::driveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+                new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your
+                                                 // Constants class
+                        new PIDConstants(5.0, 0.0, 0.005), // Translation PID constants
+                        new PIDConstants(5.0, 0.0, 0.005), // Rotation PID constants
+                        4.25, // Max module speed, in m/s
+                        0.4, // Drive base radius in meters. Distance from robot center to furthest module.
+                        new ReplanningConfig() // Default path replanning config. See the API for the options here
+                ),
+                () -> {
+                    // Boolean supplier that controls when the path will be mirrored for the red
+                    // alliance
+                    // This will flip the path being followed to the red side of the field.
+                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+                    var alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) {
+                        return alliance.get() == DriverStation.Alliance.Red;
+                    }
+                    return false;
+                },
+                this // Reference to this subsystem to set requirements
+        );
     }
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
@@ -216,9 +318,9 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
         this.y_controller_output = m_yController.calculate(this.getState().Pose.getTranslation().getY(),
                 this.y_setpoint);
 
-        yawtargetpub.set(this.yaw_setpoint);
-        yawnowpub.set(this.getState().Pose.getRotation().getDegrees());
-        yawerrorpub.set(yaw_error);
-        yawoutput.set(this.yaw_controller_output);
+        // yawtargetpub.set(this.yaw_setpoint);
+        // yawnowpub.set(this.getState().Pose.getRotation().getDegrees());
+        // yawerrorpub.set(yaw_error);
+        // yawoutput.set(this.yaw_controller_output);
     }
 }

@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import com.pathplanner.lib.commands.FollowPathCommand;
+
 import edu.wpi.first.net.PortForwarder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -23,6 +25,7 @@ public class Robot extends TimedRobot {
     // for (int port = 5800; port <= 5809; port++) {
     //   PortForwarder.add(port, "limelight.local", port);
     // }
+    FollowPathCommand.warmupCommand().schedule();
   }
 
   @Override

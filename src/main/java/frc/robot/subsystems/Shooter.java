@@ -14,15 +14,17 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class Shooter implements Subsystem {
-    TalonFX m_Shooter_D;
-    TalonFX m_Shooter_U;
+public class Shooter extends SubsystemBase {
+    public static TalonFX m_Shooter_D;
+    public static TalonFX m_Shooter_U;
 
     TalonFXConfiguration ShooterConfig_D;
     TalonFXConfiguration ShooterConfig_U;
 
     public static double shooter_autoaim_target = 60;
+    public static boolean break_flag = false;
 
     VelocityTorqueCurrentFOC velocityRequest;
     MotionMagicVelocityTorqueCurrentFOC motionMagicVelRequest;
@@ -133,10 +135,15 @@ public class Shooter implements Subsystem {
 
     public void shoot_break() {
         setMagicVelocity(0, 300);
+        break_flag = true;
     }
 
     public boolean speed_ready(double speed) {
         return Math.abs(m_Shooter_D.getVelocity().getValueAsDouble() - speed) < 0.2;
+    }
+
+    public static double get_speed() {
+        return m_Shooter_D.getVelocity().getValueAsDouble();
     }
 
     // public void shoot_out_voltage() {
@@ -149,6 +156,17 @@ public class Shooter implements Subsystem {
 
     public void stop() {
         setVoltage(0);
+    }
+
+    @Override
+    public void periodic() {
+        // This method will be called once per scheduler run
+        if (break_flag) {
+            if (m_Shooter_D.getVelocity().getValueAsDouble() < 1) {
+                break_flag = false;
+                stop();
+            }
+        }
     }
 
 }
