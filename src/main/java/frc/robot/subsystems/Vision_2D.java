@@ -8,7 +8,7 @@ import org.ejml.simple.SimpleMatrix;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.LimelightHelpers;
+// import frc.robot.LimelightHelpers;
 import frc.robot.generated.TunerConstants;
 
 public class Vision_2D extends SubsystemBase {
@@ -74,9 +74,9 @@ public class Vision_2D extends SubsystemBase {
 
         public static Vector<Observation> getObservations() {
             var observations = new Vector<Observation>();
-            double limelight_latency = LimelightHelpers.getLatency_Capture("limelight")
-                    + LimelightHelpers.getLatency_Pipeline("limelight");
-            var limelight_results = LimelightHelpers.getRawDetections("limelight");
+            // double limelight_latency = LimelightHelpers.getLatency_Capture("limelight")
+            //         + LimelightHelpers.getLatency_Pipeline("limelight");
+            // var limelight_results = LimelightHelpers.getRawDetections("limelight");
             // TODO
             return observations;
         }

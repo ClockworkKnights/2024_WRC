@@ -1,7 +1,5 @@
 package frc.robot.commands;
 
-import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest.RobotCentric;
-
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
@@ -31,7 +29,7 @@ public class DoAmp extends Command {
     public DoAmp() {
         // Use addRequirements() here to declare subsystem dependencies.
         shooter = RobotContainer.shooter;
-        arm = RobotContainer.arm;   
+        arm = RobotContainer.arm;
         intake = RobotContainer.intake;
         addRequirements(shooter, arm, intake);
         state = State.FINISHED;
@@ -43,7 +41,7 @@ public class DoAmp extends Command {
         arm.arm_pos_magic(ARM_STAGE_1, 100, 300, 900);
         shooter.shoot_break();
         intake.stop();
-        if (intake.getState() != Intake.State.EATED_REVERSED){
+        if (intake.getState() != Intake.State.EATED_REVERSED) {
             intake.reverse_once();
         }
         state = State.ARM_UP;
@@ -60,7 +58,7 @@ public class DoAmp extends Command {
     public void execute() {
         switch (state) {
             case ARM_UP:
-                if (arm.get_angle() > ARM_STAGE_1 - 3){
+                if (arm.get_angle() > ARM_STAGE_1 - 3) {
                     state = State.SHOOTER_SHOOT;
                     shooter.shoot_magic_vel(SHOOTER_SPEED, SHOOTER_ACCEL);
                     arm.arm_pos_magic(ARM_STAGE_2, 120, 600, 3000);
@@ -68,20 +66,20 @@ public class DoAmp extends Command {
                 }
                 break;
             case SHOOTER_SHOOT:
-                if (shooter.speed_ready(SHOOTER_SPEED)){
+                if (shooter.speed_ready(SHOOTER_SPEED)) {
                     state = State.WAIT_ARM;
                     // timer.reset();
                     // timer.start();
                 }
                 break;
             case WAIT_ARM:
-                if (arm.get_angle() > SHOOT_ANGLE){
+                if (arm.get_angle() > SHOOT_ANGLE) {
                     intake.eat_in();
                     state = State.ARM_SHUAI;
                 }
                 break;
             case ARM_SHUAI:
-                if (timer.get() > 1){
+                if (timer.get() > 1) {
                     state = State.ARM_DOWN;
                     shooter.shoot_break();
                     intake.stop();
@@ -110,4 +108,3 @@ public class DoAmp extends Command {
         return state == State.FINISHED || state == State.ARM_DOWN;
     }
 }
-

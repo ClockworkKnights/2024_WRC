@@ -13,7 +13,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Shooter extends SubsystemBase {
@@ -63,7 +62,7 @@ public class Shooter extends SubsystemBase {
                 .withOpenLoopRamps(new OpenLoopRampsConfigs()
                         .withVoltageOpenLoopRampPeriod(0.3))
                 // .withClosedLoopRamps(new ClosedLoopRampsConfigs()
-                //         .withTorqueClosedLoopRampPeriod(0.3))
+                // .withTorqueClosedLoopRampPeriod(0.3))
                 .withMotionMagic(new MotionMagicConfigs()
                         .withMotionMagicAcceleration(250)
                         .withMotionMagicJerk(2500));
@@ -88,7 +87,7 @@ public class Shooter extends SubsystemBase {
                 .withOpenLoopRamps(new OpenLoopRampsConfigs()
                         .withVoltageOpenLoopRampPeriod(0.3))
                 // .withClosedLoopRamps(new ClosedLoopRampsConfigs()
-                //         .withTorqueClosedLoopRampPeriod(0.3))
+                // .withTorqueClosedLoopRampPeriod(0.3))
                 .withMotionMagic(new MotionMagicConfigs()
                         .withMotionMagicCruiseVelocity(16)
                         .withMotionMagicAcceleration(250)
@@ -105,8 +104,8 @@ public class Shooter extends SubsystemBase {
     }
 
     // public void setVelocity(double velocity) {
-    //     m_Shooter_D.setControl(velocityRequest.withVelocity(velocity));
-    //     m_Shooter_U.setControl(velocityRequest.withVelocity(velocity));
+    // m_Shooter_D.setControl(velocityRequest.withVelocity(velocity));
+    // m_Shooter_U.setControl(velocityRequest.withVelocity(velocity));
     // }
 
     public void setMagicVelocity(double velocity, double accel) {
@@ -156,11 +155,11 @@ public class Shooter extends SubsystemBase {
     }
 
     // public void shoot_out_voltage() {
-    //     setVoltage(10);
+    // setVoltage(10);
     // }
 
     // public void shoot_revert_voltage() {
-    //     setVoltage(-5);
+    // setVoltage(-5);
     // }
 
     public void stop() {

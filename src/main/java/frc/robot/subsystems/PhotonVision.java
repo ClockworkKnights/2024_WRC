@@ -1,11 +1,6 @@
 package frc.robot.subsystems;
 
-import java.util.Optional;
-
-import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonPoseEstimator;
-import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 
 import com.ctre.phoenix6.hardware.Pigeon2;
 
@@ -128,13 +123,12 @@ public class PhotonVision extends SubsystemBase {
                         best_target_y = y;
                     }
                     // var height = Math.max(Math.abs(corners.get(0).y - corners.get(1).y),
-                    //         Math.abs(corners.get(0).y - corners.get(2).y));
+                    // Math.abs(corners.get(0).y - corners.get(2).y));
                     count += 1;
                 }
                 // System.out.println("Best Target: " + best_target_x + ", " + best_target_y);
                 yaw_error = getYawError(best_target_x, best_target_y);
-            }
-            else {
+            } else {
                 yaw_error = 0;
             }
         }
@@ -149,9 +143,11 @@ public class PhotonVision extends SubsystemBase {
     // 1252 688
 
     // y = -1.119x + 2026.4
-    // if y > -1.119x + 2026.4, then the target is to the left of the crosshair, yaw_error > 0
-    // if y < -1.119x + 2026.4, then the target is to the right of the crosshair, yaw_error < 0
-    
+    // if y > -1.119x + 2026.4, then the target is to the left of the crosshair,
+    // yaw_error > 0
+    // if y < -1.119x + 2026.4, then the target is to the right of the crosshair,
+    // yaw_error < 0
+
     public double getYawError(double x, double y) {
         // return target-now
         return y - (-1.119 * x + 2026.4);

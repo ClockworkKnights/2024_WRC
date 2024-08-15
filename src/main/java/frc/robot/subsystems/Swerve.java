@@ -2,7 +2,6 @@ package frc.robot.subsystems;
 
 import java.util.function.Supplier;
 
-import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
@@ -14,25 +13,18 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.ReplanningConfig;
 
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import frc.robot.generated.TunerConstants;
 
@@ -41,9 +33,6 @@ import frc.robot.generated.TunerConstants;
  * subsystem so it can be used in command-based projects easily.
  */
 public class Swerve extends SwerveDrivetrain implements Subsystem {
-    private static final double kSimLoopPeriod = 0.005; // 5 ms
-    private Notifier m_simNotifier = null;
-    private double m_lastSimTime;
 
     public enum AimMode {
         NONE,
@@ -101,28 +90,33 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             modulePositions[i] = this.getModule(i).getCachedPosition();
         }
 
-        // System.out.println("Reset Position: " + poseMeters.getX() + " " + poseMeters.getY() + " "
-                // + poseMeters.getRotation().getDegrees());
+        // System.out.println("Reset Position: " + poseMeters.getX() + " " +
+        // poseMeters.getY() + " "
+        // + poseMeters.getRotation().getDegrees());
         this.m_odometry.resetPosition(this.getPigeon2().getRotation2d(), modulePositions, poseMeters);
     }
 
     public void driveRobotRelative(ChassisSpeeds speeds) {
         this.setControl(drive_RobotRelative.withVelocityX(speeds.vxMetersPerSecond)
                 .withVelocityY(speeds.vyMetersPerSecond).withRotationalRate(speeds.omegaRadiansPerSecond));
-        // System.out.println("Drive Robot Relative: " + speeds.vxMetersPerSecond + " " + speeds.vyMetersPerSecond + " "
-        //         + speeds.omegaRadiansPerSecond);
+        // System.out.println("Drive Robot Relative: " + speeds.vxMetersPerSecond + " "
+        // + speeds.vyMetersPerSecond + " "
+        // + speeds.omegaRadiansPerSecond);
     }
 
     public Pose2d getPose() {
-        // System.out.println("Pose get: " + this.getPose().getX() + " " + this.getPose().getY() + " "
-        //         + this.getPose().getRotation().getDegrees());
+        // System.out.println("Pose get: " + this.getPose().getX() + " " +
+        // this.getPose().getY() + " "
+        // + this.getPose().getRotation().getDegrees());
         var state = this.getState();
         return state.Pose;
     }
 
     public ChassisSpeeds getSpeeds() {
-        // System.out.println("Speeds get: " + this.getState().speeds.vxMetersPerSecond + " "
-        //         + this.getState().speeds.vyMetersPerSecond + " " + this.getState().speeds.omegaRadiansPerSecond);
+        // System.out.println("Speeds get: " + this.getState().speeds.vxMetersPerSecond
+        // + " "
+        // + this.getState().speeds.vyMetersPerSecond + " " +
+        // this.getState().speeds.omegaRadiansPerSecond);
         return this.getState().speeds;
     }
 
@@ -204,7 +198,8 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
         Supplier<Double> x_output;
         Supplier<Double> y_output;
         rot_output = () -> {
-            if (aim_mode == AimMode.SPEAKER || aim_mode == AimMode.NOTE || aim_mode == AimMode.AMP || aim_mode == AimMode.PASS_NOTE) {
+            if (aim_mode == AimMode.SPEAKER || aim_mode == AimMode.NOTE || aim_mode == AimMode.AMP
+                    || aim_mode == AimMode.PASS_NOTE) {
                 if (yaw_controller_output > MaxAngularRate) {
                     return MaxAngularRate;
                 } else if (yaw_controller_output < -MaxAngularRate) {
@@ -255,7 +250,8 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             }
         };
         Supplier<Double> rot_deadband = () -> {
-            if (aim_mode == AimMode.SPEAKER || aim_mode == AimMode.NOTE || aim_mode == AimMode.AMP || aim_mode == AimMode.PASS_NOTE) {
+            if (aim_mode == AimMode.SPEAKER || aim_mode == AimMode.NOTE || aim_mode == AimMode.AMP
+                    || aim_mode == AimMode.PASS_NOTE) {
                 return 0.;
             } else {
                 return 0.1 * MaxAngularRate;
@@ -330,7 +326,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
 
         double yaw_error = 0;
         if (aim_mode == AimMode.SPEAKER) {
-            
+
             yaw_error = -this.speaker_yaw_setpoint + this.getPose().getRotation().getDegrees();
             if (yaw_error > 180) {
                 yaw_error -= 360;
@@ -339,18 +335,16 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
                 yaw_error += 360;
             }
             this.yaw_controller_output = m_yawController.calculate(yaw_error, 0);
-        }
-        else if (aim_mode == AimMode.NOTE) {
+        } else if (aim_mode == AimMode.NOTE) {
             yaw_error = -PhotonVision.yaw_error;
-            if(yaw_error > 90) {
+            if (yaw_error > 90) {
                 yaw_error = 90;
             }
-            if(yaw_error < -90) {
+            if (yaw_error < -90) {
                 yaw_error = -90;
             }
-            this.yaw_controller_output = m_yawController.calculate(yaw_error/10, 0);
-        }
-        else if (aim_mode == AimMode.AMP) {
+            this.yaw_controller_output = m_yawController.calculate(yaw_error / 10, 0);
+        } else if (aim_mode == AimMode.AMP) {
             yaw_error = -90 + this.getPose().getRotation().getDegrees();
             if (yaw_error > 180) {
                 yaw_error -= 360;
@@ -359,8 +353,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
                 yaw_error += 360;
             }
             this.yaw_controller_output = m_yawController.calculate(yaw_error, 0);
-        }
-        else if (aim_mode == AimMode.PASS_NOTE) {
+        } else if (aim_mode == AimMode.PASS_NOTE) {
             yaw_error = 0;
             if (DriverStation.getAlliance().isPresent()) {
                 if (DriverStation.getAlliance().get() == Alliance.Red) {
@@ -381,8 +374,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
 
         pub_yaw_output.set(this.yaw_controller_output);
         pub_yaw_error.set(yaw_error);
-        
-        
+
         this.x_controller_output = m_xController.calculate(this.getPose().getTranslation().getX(),
                 this.x_setpoint);
         this.y_controller_output = m_yController.calculate(this.getPose().getTranslation().getY(),

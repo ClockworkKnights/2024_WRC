@@ -13,13 +13,11 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.RobotContainer;
 
 public class Intake extends SubsystemBase {
     TalonFX m_Intake_L;
@@ -151,8 +149,7 @@ public class Intake extends SubsystemBase {
             current_stable_A = 0;
             current_stable_B = 0;
             wait_current_unstable = false;
-        }
-        else if (Shooter.get_speed() >= 10) {
+        } else if (Shooter.get_speed() >= 10) {
             note_state = NoteState.EMPTY;
             pub_note_state.set("No");
             current_sample_index = 0;
@@ -253,12 +250,11 @@ public class Intake extends SubsystemBase {
                         current_stable_A = current_avg;
                         wait_current_unstable = true;
                         System.out.println("Current A: " + current_stable_A);
-                    }
-                    else if (current_stable_A != 0) {
+                    } else if (current_stable_A != 0) {
                         current_stable_B = current_avg;
                         wait_current_unstable = true;
                         if (current_stable_B - current_stable_A > 0.5) {
-                            note_state= NoteState.FULL;
+                            note_state = NoteState.FULL;
                             pub_note_state.set("Yes");
                             if (auto_stop) {
                                 reverse_once_pos(0);
@@ -273,7 +269,7 @@ public class Intake extends SubsystemBase {
                 }
             }
         }
-        if(state == State.POPPING) {
+        if (state == State.POPPING) {
             current_sample[current_sample_index % current_sample_size] = m_Intake_L.getStatorCurrent()
                     .getValueAsDouble();
             current_sample_index++;
@@ -290,7 +286,7 @@ public class Intake extends SubsystemBase {
             current_std = Math.sqrt(current_std / current_sample_size);
             if (current_sample_index > current_sample_size) {
                 if (current_std < 0.1 && current_avg < 10 && current_avg > 3) {
-                    note_state= NoteState.EMPTY;
+                    note_state = NoteState.EMPTY;
                     pub_note_state.set("No");
                     if (auto_stop) {
                         stop();
@@ -308,9 +304,8 @@ public class Intake extends SubsystemBase {
                 time_to_stop = Timer.getFPGATimestamp() + 0.3;
                 state = State.POS_WAIT_STOP_2;
             }
-        }
-        else if (state == State.POS_WAIT_STOP_2) {
-            if(Timer.getFPGATimestamp() > time_to_stop) {
+        } else if (state == State.POS_WAIT_STOP_2) {
+            if (Timer.getFPGATimestamp() > time_to_stop) {
                 stop();
                 state = State.EATED_REVERSED;
             }

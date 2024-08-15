@@ -23,7 +23,6 @@ import frc.robot.subsystems.Swerve;
 import frc.robot.subsystems.Swerve.AimMode;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Limelight_v1;
-import frc.robot.subsystems.Limelight_v2;
 import frc.robot.subsystems.PhotonVision;
 import frc.robot.subsystems.Aimer;
 import frc.robot.subsystems.Arm;
@@ -75,8 +74,14 @@ public class RobotContainer {
         }));
 
         // Intake in
-        joystick.L2().onTrue(Commands.runOnce(() -> {intake.eat_in();intake.auto_stop=false;}));
-        joystick.L2().onFalse(Commands.runOnce(() -> {intake.eat_stop();intake.auto_stop=false;}));
+        joystick.L2().onTrue(Commands.runOnce(() -> {
+            intake.eat_in();
+            intake.auto_stop = false;
+        }));
+        joystick.L2().onFalse(Commands.runOnce(() -> {
+            intake.eat_stop();
+            intake.auto_stop = false;
+        }));
         // Intake out
         joystick.L1().onTrue(Commands.runOnce(() -> intake.eat_out()));
         joystick.L1().onFalse(Commands.runOnce(() -> intake.stop()));
@@ -114,7 +119,7 @@ public class RobotContainer {
         }));
         joystick.triangle().whileTrue(DoAmp);
 
-        joystick.cross().onTrue(Commands.run(() -> {            
+        joystick.cross().onTrue(Commands.run(() -> {
             drivetrain.aim_mode = AimMode.PASS_NOTE;
             arm.arm_up_notepass();
         }));

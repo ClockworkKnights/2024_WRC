@@ -1,6 +1,5 @@
 package frc.robot.commands;
 
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -48,8 +47,7 @@ public class AimShoot extends Command {
         if (intake.getState() != Intake.State.POS_WAIT_STOP && intake.getState() != Intake.State.EATED_REVERSED) {
             intake.reverse_once_pos(1);
             state = State.INTAKE_REVERSE;
-        }
-        else {
+        } else {
             state = State.ARM_UP;
         }
     }
@@ -60,18 +58,18 @@ public class AimShoot extends Command {
         switch (state) {
             case INTAKE_REVERSE:
                 if (intake.getState() == Intake.State.EATED_REVERSED) {
-                    state = State.ARM_UP; 
+                    state = State.ARM_UP;
                 }
                 break;
             case ARM_UP:
-                if (arm.is_up()){
+                if (arm.is_up()) {
                     state = State.SHOOTER_SHOOT;
                     shooter.shoot_autoaim();
                 }
                 break;
             case SHOOTER_SHOOT:
                 shooter.shoot_autoaim();
-                if (shooter.speed_ready_autoaim() && RobotController.getBatteryVoltage() > 10.5){
+                if (shooter.speed_ready_autoaim() && RobotController.getBatteryVoltage() > 10.5) {
                     state = State.INTAKE_DELIVER;
                     intake.eat_volt(10);
                     timer.reset();
@@ -79,13 +77,12 @@ public class AimShoot extends Command {
                 }
                 break;
             case INTAKE_DELIVER:
-                if (timer.get() > 0.5){
+                if (timer.get() > 0.5) {
                     state = State.ARM_DOWN;
                     shooter.shoot_break();
                     arm.arm_down();
                     intake.stop();
-                }
-                else {
+                } else {
                     shooter.shoot_autoaim();
                 }
                 break;

@@ -30,7 +30,6 @@ public class Arm extends SubsystemBase {
     private final NetworkTable table = inst.getTable("Arm");
     private final StringPublisher statePub = table.getStringTopic("State").publish();
 
-
     public static double arm_autoaim_target = 1;
     public static double arm_note_pass_target = 17;
 
@@ -199,7 +198,8 @@ public class Arm extends SubsystemBase {
     }
 
     public void arm_vel_magic(double vel, double accel) {
-        MotionMagicVelocityVoltage req = new MotionMagicVelocityVoltage(vel).withAcceleration(accel).withEnableFOC(true);
+        MotionMagicVelocityVoltage req = new MotionMagicVelocityVoltage(vel).withAcceleration(accel)
+                .withEnableFOC(true);
         m_Arm_L.setControl(req);
         m_Arm_R.setControl(right_follow_left);
         statePub.set("ArmVelMagic " + vel + " accel " + accel);
@@ -226,7 +226,7 @@ public class Arm extends SubsystemBase {
     }
 
     public boolean is_ready(double angle) {
-        return Math.abs(m_Arm_L.getPosition().getValueAsDouble()  - angle) < 1;
+        return Math.abs(m_Arm_L.getPosition().getValueAsDouble() - angle) < 1;
     }
 
     public void setPosition(double position) {

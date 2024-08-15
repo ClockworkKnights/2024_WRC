@@ -7,7 +7,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.generated.TunerConstants;
@@ -28,11 +27,11 @@ public class Limelight_v2 extends SubsystemBase {
     public void periodic() {
         boolean doRejectUpdate = false;
 
-        LimelightHelpers.SetRobotOrientation("limelight", -m_swerve.getPigeon2().getAngle(), -m_swerve.getPigeon2().getRate(), 0, 0,
+        LimelightHelpers.SetRobotOrientation("limelight", -m_swerve.getPigeon2().getAngle(),
+                -m_swerve.getPigeon2().getRate(), 0, 0,
                 0, 0);
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
-        if (Math.abs(m_gyro.getRate()) > 720)
-        {
+        if (Math.abs(m_gyro.getRate()) > 720) {
             doRejectUpdate = true;
         }
         if (mt2.tagCount == 0) {
