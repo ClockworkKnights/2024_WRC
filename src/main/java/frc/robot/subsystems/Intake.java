@@ -41,6 +41,7 @@ public class Intake extends SubsystemBase {
         UNKNOWN,
         EATING,
         POS_WAIT_STOP,
+        POS_WAIT_STOP_2,
         EATED_REVERSED,
         POPPING,
         POPPED,
@@ -63,7 +64,7 @@ public class Intake extends SubsystemBase {
         m_Intake_L = new TalonFX(14, "canivore");
         m_Intake_R = new TalonFX(15, "canivore");
 
-        // velocityRequest = new VelocityTorqueCurrentFOC(0);
+        velocityRequest = new VelocityTorqueCurrentFOC(0);
         voltageRequest = new VoltageOut(0);
         positionRequest_L = new PositionVoltage(0);
         positionRequest_R = new PositionVoltage(0);
@@ -136,13 +137,13 @@ public class Intake extends SubsystemBase {
         return m_Intake_R.getPosition().getValueAsDouble();
     }
 
-    // public void setVelocity(double velocity) {
-    // m_Intake_L.setControl(velocityRequest.withVelocity(velocity));
-    // m_Intake_R.setControl(velocityRequest.withVelocity(velocity));
-    // }
+    public void setVelocity(double velocity) {
+        m_Intake_L.setControl(velocityRequest.withVelocity(velocity));
+        m_Intake_R.setControl(velocityRequest.withVelocity(velocity));
+    }
 
     public void eat_in() {
-        setVoltage(5);
+        setVoltage(10);
         if (state != State.EATING && Shooter.get_speed() < 10) {
             state = State.EATING;
             current_sample_index = 0;
@@ -173,7 +174,8 @@ public class Intake extends SubsystemBase {
 
     public void eat_stop() {
         if (state == State.EATING) {
-            reverse_once_pos(0);
+            setVelocity(0);
+            state = State.POS_WAIT_STOP;
         } else {
             stop();
         }
@@ -196,7 +198,7 @@ public class Intake extends SubsystemBase {
         var positionNow_R = m_Intake_R.getPosition();
         m_Intake_L.setControl(positionRequest_L.withPosition(positionNow_L.getValue() - 1));
         m_Intake_R.setControl(positionRequest_R.withPosition(positionNow_R.getValue() - 1));
-        state = State.POS_WAIT_STOP;
+        state = State.POS_WAIT_STOP_2;
         time_to_stop = Timer.getFPGATimestamp() + 0.3;
     }
 
@@ -206,7 +208,7 @@ public class Intake extends SubsystemBase {
         m_Intake_L.setControl(positionRequest_L.withPosition(positionNow_L.getValue() - pos));
         m_Intake_R.setControl(positionRequest_R.withPosition(positionNow_R.getValue() - pos));
         time_to_stop = Timer.getFPGATimestamp() + 0.3;
-        state = State.POS_WAIT_STOP;
+        state = State.POS_WAIT_STOP_2;
     }
 
     public State getState() {
@@ -302,11 +304,17 @@ public class Intake extends SubsystemBase {
             // System.out.println("Time to stop: " + time_to_stop + " Current time: " +
             // Timer.getFPGATimestamp());
             if (Timer.getFPGATimestamp() > time_to_stop) {
+                reverse_once_pos(1);
+                time_to_stop = Timer.getFPGATimestamp() + 0.3;
+                state = State.POS_WAIT_STOP_2;
+            }
+        }
+        else if (state == State.POS_WAIT_STOP_2) {
+            if(Timer.getFPGATimestamp() > time_to_stop) {
                 stop();
                 state = State.EATED_REVERSED;
             }
         }
-
+        // System.out.println(state);
     }
-
 }

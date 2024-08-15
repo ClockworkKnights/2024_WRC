@@ -17,13 +17,22 @@ import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Arm extends SubsystemBase {
     public static final TalonFX m_Arm_L = new TalonFX(12, "canivore");
     public static final TalonFX m_Arm_R = new TalonFX(13, "canivore");
 
+    private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
+    private final NetworkTable table = inst.getTable("Arm");
+    private final StringPublisher statePub = table.getStringTopic("State").publish();
+
+
     public static double arm_autoaim_target = 1;
+    public static double arm_note_pass_target = 17;
 
     public boolean arm_down_flag = false;
 
@@ -117,6 +126,7 @@ public class Arm extends SubsystemBase {
     public void setVoltage(double voltage) {
         m_Arm_L.setControl(voltageRequest.withOutput(voltage));
         m_Arm_R.setControl(voltageRequest.withOutput(voltage));
+        statePub.set("SetVoltage " + voltage);
     }
 
     public void resetPosition(double position) {
@@ -172,6 +182,10 @@ public class Arm extends SubsystemBase {
         setPosition(arm_autoaim_target);
     }
 
+    public void arm_up_notepass() {
+        setPosition(arm_note_pass_target);
+    }
+
     public void arm_down() {
         setPosition(0.6);
         arm_down_flag = true;
@@ -181,12 +195,14 @@ public class Arm extends SubsystemBase {
         DynamicMotionMagicVoltage req = new DynamicMotionMagicVoltage(pos, max_vel, accel, jerk).withEnableFOC(true);
         m_Arm_L.setControl(req);
         m_Arm_R.setControl(right_follow_left);
+        statePub.set("ArmPosMagic " + pos + " max_vel " + max_vel + " accel " + accel + " jerk " + jerk);
     }
 
     public void arm_vel_magic(double vel, double accel) {
         MotionMagicVelocityVoltage req = new MotionMagicVelocityVoltage(vel).withAcceleration(accel).withEnableFOC(true);
         m_Arm_L.setControl(req);
         m_Arm_R.setControl(right_follow_left);
+        statePub.set("ArmVelMagic " + vel + " accel " + accel);
     }
 
     public void set_angle(double angle) {
@@ -214,20 +230,31 @@ public class Arm extends SubsystemBase {
     }
 
     public void setPosition(double position) {
+
+        if (position > 25.9) {
+            position = 25.9;
+        }
+        if (position < 0.5) {
+            position = 0.5;
+        }
+
         m_Arm_L.setControl(positionRequest.withPosition(position));
         m_Arm_R.setControl(right_follow_left);
+        statePub.set("SetPosition " + position);
     }
 
     public void stop() {
         setVoltage(0);
+        statePub.set("stop");
     }
 
     @Override
     public void periodic() {
-        if (arm_down_flag && m_Arm_L.getPosition().getValueAsDouble() < 1) {
+        if (arm_down_flag && m_Arm_L.getPosition().getValueAsDouble() < 3) {
             stop();
             arm_down_flag = false;
         }
+        // System.out.println(arm_down_flag);
     }
 
 }

@@ -13,6 +13,8 @@ import frc.robot.generated.TunerConstants;
 
 public class Limelight_v1 extends SubsystemBase {
 
+    public static boolean vision_yaw = false;
+
     Swerve m_swerve = TunerConstants.DriveTrain;
     Pigeon2 m_gyro = new Pigeon2(20, "canivore");
 
@@ -49,27 +51,38 @@ public class Limelight_v1 extends SubsystemBase {
         }
 
         if (!doRejectUpdate) {
-            double dev_dist = Math.exp(1.5716*mt1.rawFiducials[0].distToCamera)*0.0774;
-            double dev_amb = Math.exp(7.2861*mt1.rawFiducials[0].ambiguity)*0.5818;
-            double dev = Math.max(dev_dist, dev_amb);
+            double dev_dist = Math.exp(1.5716 * mt1.rawFiducials[0].distToCamera) * 0.0774;
+            double dev_amb = Math.exp(7.2861 * mt1.rawFiducials[0].ambiguity) * 0.5818;
+            double dev = Math.min(dev_dist, dev_amb);
             double dev_yaw = dev;
-            if (first_pose)
-            {
+            if (first_pose) {
                 dev = 0.001;
                 dev_yaw = 9;
                 first_pose = false;
             }
-            m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(dev/16, dev/16, dev_yaw));
-            m_swerve.addVisionMeasurement(
-                    pose,
-                    timestamp);
+            if (vision_yaw) {
+                m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(dev, dev, dev_yaw));
+                m_swerve.addVisionMeasurement(
+                        new Pose2d(pose.getX(), pose.getY(),
+                                // m_swerve.getPigeon2().getRotation2d()),
+                                pose.getRotation()),
+                        timestamp);
+            } else {
+                dev_yaw = 99999999.;
+                m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(dev, dev, dev_yaw));
+                m_swerve.addVisionMeasurement(
+                        new Pose2d(pose.getX(), pose.getY(),
+                                m_swerve.getPigeon2().getRotation2d()),
+                        // pose.getRotation()),
+                        timestamp);
+            }
             this.m_lastPose = pose;
         }
 
         limelightPub.set(new double[] {
-                mt1.pose.getX(),
-                mt1.pose.getY(),
-                mt1.pose.getRotation().getDegrees()
+                m_lastPose.getX(),
+                m_lastPose.getY(),
+                m_lastPose.getRotation().getDegrees()
         });
 
     }

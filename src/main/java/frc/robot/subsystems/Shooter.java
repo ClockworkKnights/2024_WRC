@@ -24,6 +24,7 @@ public class Shooter extends SubsystemBase {
     TalonFXConfiguration ShooterConfig_U;
 
     public static double shooter_autoaim_target = 60;
+    public static double shooter_notepass_target = 80;
     public static boolean break_flag = false;
 
     VelocityTorqueCurrentFOC velocityRequest;
@@ -55,7 +56,7 @@ public class Shooter extends SubsystemBase {
                         .withKP(10)// 2)
                         .withKI(0)
                         .withKD(0.15)
-                        .withKS(3.48574)
+                        .withKS(0)
                         .withKV(0.079603)
                         .withKA(0.622)// 2)
                         .withKG(0))
@@ -80,7 +81,7 @@ public class Shooter extends SubsystemBase {
                         .withKP(10)// 2)
                         .withKI(0)
                         .withKD(0.15)
-                        .withKS(3.48574)
+                        .withKS(0)
                         .withKV(0.079603)
                         .withKA(0.622)// 2)
                         .withKG(0))
@@ -121,8 +122,16 @@ public class Shooter extends SubsystemBase {
         setMagicVelocity(shooter_autoaim_target, 300);
     }
 
+    public void shoot_notepass() {
+        setMagicVelocity(shooter_notepass_target, 600);
+    }
+
     public boolean speed_ready_autoaim() {
         return speed_ready(shooter_autoaim_target);
+    }
+
+    public boolean speed_ready_notepass() {
+        return speed_ready(shooter_notepass_target);
     }
 
     public void shoot_amp() {

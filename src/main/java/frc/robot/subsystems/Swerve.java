@@ -14,6 +14,7 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.ReplanningConfig;
 
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -25,6 +26,7 @@ import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -43,12 +45,20 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
 
-    public boolean take_control_yaw = false;
-    public double yaw_setpoint = 0.;
+    public enum AimMode {
+        NONE,
+        SPEAKER,
+        NOTE,
+        AMP,
+        PASS_NOTE,
+    }
+
+    public AimMode aim_mode = AimMode.NONE;
+    public double speaker_yaw_setpoint = 0.;
+    public double note_pass_yaw_setpoint = 0.;
     public double yaw_controller_output = 0;
     public PIDController m_yawController = new PIDController(0.2, 0, 0.005);
 
-    public boolean take_control_xy = false;
     public double x_setpoint = 0.;
     public double y_setpoint = 0.;
     public PIDController m_xController = new PIDController(0.1, 0, 0);
@@ -61,10 +71,9 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
 
     private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
     private final NetworkTable table = inst.getTable("Swerve");
-    private final DoublePublisher yawtargetpub = table.getDoubleTopic("yaw_target").publish();
-    private final DoublePublisher yawnowpub = table.getDoubleTopic("yaw_now").publish();
-    private final DoublePublisher yawerrorpub = table.getDoubleTopic("yaw_error").publish();
-    private final DoublePublisher yawoutput = table.getDoubleTopic("yaw_output").publish();
+    private final StringPublisher pub_aim_mode = table.getSubTable("Aim").getStringTopic("Aim Mode").publish();
+    private final DoublePublisher pub_yaw_error = table.getSubTable("Aim").getDoubleTopic("Yaw Error").publish();
+    private final DoublePublisher pub_yaw_output = table.getSubTable("Aim").getDoubleTopic("Yaw Output").publish();
 
     public static final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
@@ -87,14 +96,14 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
     private boolean hasAppliedOperatorPerspective = false;
 
     public void resetPosition(Pose2d poseMeters) {
-        // SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
-        // for (int i = 0; i < 4; i++) {
-        //     modulePositions[i] = this.getModule(i).getCachedPosition();
-        // }
+        SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
+        for (int i = 0; i < 4; i++) {
+            modulePositions[i] = this.getModule(i).getCachedPosition();
+        }
 
-        // // System.out.println("Reset Position: " + poseMeters.getX() + " " + poseMeters.getY() + " "
-        //         // + poseMeters.getRotation().getDegrees());
-        // this.m_odometry.resetPosition(this.getPigeon2().getRotation2d(), modulePositions, poseMeters);
+        // System.out.println("Reset Position: " + poseMeters.getX() + " " + poseMeters.getY() + " "
+                // + poseMeters.getRotation().getDegrees());
+        this.m_odometry.resetPosition(this.getPigeon2().getRotation2d(), modulePositions, poseMeters);
     }
 
     public void driveRobotRelative(ChassisSpeeds speeds) {
@@ -105,8 +114,8 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
     }
 
     public Pose2d getPose() {
-        // System.out.println("Pose get: " + this.getState().Pose.getX() + " " + this.getState().Pose.getY() + " "
-        //         + this.getState().Pose.getRotation().getDegrees());
+        // System.out.println("Pose get: " + this.getPose().getX() + " " + this.getPose().getY() + " "
+        //         + this.getPose().getRotation().getDegrees());
         var state = this.getState();
         return state.Pose;
     }
@@ -183,6 +192,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
                 },
                 this // Reference to this subsystem to set requirements
         );
+
     }
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
@@ -194,7 +204,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
         Supplier<Double> x_output;
         Supplier<Double> y_output;
         rot_output = () -> {
-            if (take_control_yaw) {
+            if (aim_mode == AimMode.SPEAKER || aim_mode == AimMode.NOTE || aim_mode == AimMode.AMP || aim_mode == AimMode.PASS_NOTE) {
                 if (yaw_controller_output > MaxAngularRate) {
                     return MaxAngularRate;
                 } else if (yaw_controller_output < -MaxAngularRate) {
@@ -211,7 +221,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             }
         };
         x_output = () -> {
-            if (take_control_xy) {
+            if (aim_mode == AimMode.AMP) {
                 if (x_controller_output > MaxSpeed) {
                     return MaxSpeed;
                 } else if (x_controller_output < -MaxSpeed) {
@@ -228,7 +238,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             }
         };
         y_output = () -> {
-            if (take_control_xy) {
+            if (aim_mode == AimMode.AMP) {
                 if (y_controller_output > MaxSpeed) {
                     return MaxSpeed;
                 } else if (y_controller_output < -MaxSpeed) {
@@ -245,7 +255,7 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             }
         };
         Supplier<Double> rot_deadband = () -> {
-            if (take_control_yaw) {
+            if (aim_mode == AimMode.SPEAKER || aim_mode == AimMode.NOTE || aim_mode == AimMode.AMP || aim_mode == AimMode.PASS_NOTE) {
                 return 0.;
             } else {
                 return 0.1 * MaxAngularRate;
@@ -268,9 +278,21 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             if (allianceColor == Alliance.Red) {
                 this.getPigeon2().setYaw(RedAlliancePerspectiveRotation.getDegrees());
                 this.setOperatorPerspectiveForward(RedAlliancePerspectiveRotation);
+                this.seedFieldRelative(new Pose2d(this.getPose().getX(), this.getPose().getY(),
+                        RedAlliancePerspectiveRotation));
+                this.getPigeon2().setYaw(RedAlliancePerspectiveRotation.getDegrees());
+                this.setOperatorPerspectiveForward(RedAlliancePerspectiveRotation);
+                this.seedFieldRelative(new Pose2d(this.getPose().getX(), this.getPose().getY(),
+                        RedAlliancePerspectiveRotation));
             } else {
                 this.getPigeon2().setYaw(BlueAlliancePerspectiveRotation.getDegrees());
                 this.setOperatorPerspectiveForward(BlueAlliancePerspectiveRotation);
+                this.seedFieldRelative(new Pose2d(this.getPose().getX(), this.getPose().getY(),
+                        BlueAlliancePerspectiveRotation));
+                this.getPigeon2().setYaw(BlueAlliancePerspectiveRotation.getDegrees());
+                this.setOperatorPerspectiveForward(BlueAlliancePerspectiveRotation);
+                this.seedFieldRelative(new Pose2d(this.getPose().getX(), this.getPose().getY(),
+                        BlueAlliancePerspectiveRotation));
             }
         });
         this.seedFieldRelative();
@@ -304,22 +326,70 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
             });
         }
 
-        double yaw_error = -this.yaw_setpoint + this.getState().Pose.getRotation().getDegrees();
-        if (yaw_error > 180) {
-            yaw_error -= 360;
-        }
-        if (yaw_error < -180) {
-            yaw_error += 360;
-        }
-        this.yaw_controller_output = m_yawController.calculate(yaw_error, 0);
+        pub_aim_mode.set(aim_mode.toString());
 
-        this.x_controller_output = m_xController.calculate(this.getState().Pose.getTranslation().getX(),
+        double yaw_error = 0;
+        if (aim_mode == AimMode.SPEAKER) {
+            
+            yaw_error = -this.speaker_yaw_setpoint + this.getPose().getRotation().getDegrees();
+            if (yaw_error > 180) {
+                yaw_error -= 360;
+            }
+            if (yaw_error < -180) {
+                yaw_error += 360;
+            }
+            this.yaw_controller_output = m_yawController.calculate(yaw_error, 0);
+        }
+        else if (aim_mode == AimMode.NOTE) {
+            yaw_error = -PhotonVision.yaw_error;
+            if(yaw_error > 90) {
+                yaw_error = 90;
+            }
+            if(yaw_error < -90) {
+                yaw_error = -90;
+            }
+            this.yaw_controller_output = m_yawController.calculate(yaw_error/10, 0);
+        }
+        else if (aim_mode == AimMode.AMP) {
+            yaw_error = -90 + this.getPose().getRotation().getDegrees();
+            if (yaw_error > 180) {
+                yaw_error -= 360;
+            }
+            if (yaw_error < -180) {
+                yaw_error += 360;
+            }
+            this.yaw_controller_output = m_yawController.calculate(yaw_error, 0);
+        }
+        else if (aim_mode == AimMode.PASS_NOTE) {
+            yaw_error = 0;
+            if (DriverStation.getAlliance().isPresent()) {
+                if (DriverStation.getAlliance().get() == Alliance.Red) {
+                    yaw_error = -160 + this.getPose().getRotation().getDegrees();
+                } else {
+                    yaw_error = -20 + this.getPose().getRotation().getDegrees();
+                }
+            }
+
+            if (yaw_error > 180) {
+                yaw_error -= 360;
+            }
+            if (yaw_error < -180) {
+                yaw_error += 360;
+            }
+            this.yaw_controller_output = m_yawController.calculate(yaw_error, 0);
+        }
+
+        pub_yaw_output.set(this.yaw_controller_output);
+        pub_yaw_error.set(yaw_error);
+        
+        
+        this.x_controller_output = m_xController.calculate(this.getPose().getTranslation().getX(),
                 this.x_setpoint);
-        this.y_controller_output = m_yController.calculate(this.getState().Pose.getTranslation().getY(),
+        this.y_controller_output = m_yController.calculate(this.getPose().getTranslation().getY(),
                 this.y_setpoint);
 
         // yawtargetpub.set(this.yaw_setpoint);
-        // yawnowpub.set(this.getState().Pose.getRotation().getDegrees());
+        // yawnowpub.set(this.getPose().getRotation().getDegrees());
         // yawerrorpub.set(yaw_error);
         // yawoutput.set(this.yaw_controller_output);
     }

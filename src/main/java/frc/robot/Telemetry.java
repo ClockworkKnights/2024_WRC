@@ -95,7 +95,7 @@ public class Telemetry {
         });
 
         yaw_now.set(state.Pose.getRotation().getDegrees());
-        yaw_setPoint.set(swerve.yaw_setpoint);
+        yaw_setPoint.set(swerve.speaker_yaw_setpoint);
 
         /* Telemeterize the robot's general speeds */
         double currentTime = Utils.getCurrentTimeSeconds();
