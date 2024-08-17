@@ -5,7 +5,6 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
-import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
@@ -13,19 +12,21 @@ import frc.robot.generated.TunerConstants;
 
 public class Limelight_v2 extends SubsystemBase {
 
-    Swerve m_swerve = TunerConstants.DriveTrain;
-    Pigeon2 m_gyro = new Pigeon2(20, "canivore");
+    public static boolean vision_enabled = true;
 
-    private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
-    private final NetworkTable table = inst.getTable("Pose");
-    private final DoubleArrayPublisher limelightPub = table.getDoubleArrayTopic("limelight").publish();
+    Swerve m_swerve = TunerConstants.DriveTrain;
+    Pigeon2 m_gyro = m_swerve.getPigeon2();
+    
+    private final DoubleArrayPublisher limelightPub = NetworkTableInstance.getDefault()
+            .getTable("Pose").getDoubleArrayTopic("limelight")
+            .publish();
 
     public Limelight_v2() {
     }
 
     @Override
     public void periodic() {
-        boolean doRejectUpdate = false;
+        boolean doRejectUpdate = !vision_enabled;
 
         LimelightHelpers.SetRobotOrientation("limelight", -m_swerve.getPigeon2().getAngle(),
                 -m_swerve.getPigeon2().getRate(), 0, 0,

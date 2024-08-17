@@ -19,10 +19,10 @@ public class Shooter extends SubsystemBase {
     public static TalonFX m_Shooter_D;
     public static TalonFX m_Shooter_U;
 
-    TalonFXConfiguration ShooterConfig_D;
-    TalonFXConfiguration ShooterConfig_U;
+    TalonFXConfiguration motorCfg_Shooter_D;
+    TalonFXConfiguration motorCfg_Shooter_U;
 
-    public static double shooter_autoaim_target = 60;
+    public static double shooter_speaker_target = 60;
     public static double shooter_notepass_target = 80;
     public static boolean break_flag = false;
 
@@ -42,7 +42,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public void configure() {
-        ShooterConfig_D = new TalonFXConfiguration()
+        motorCfg_Shooter_D = new TalonFXConfiguration()
                 .withCurrentLimits(
                         new CurrentLimitsConfigs()
                                 .withSupplyCurrentLimit(40)
@@ -67,7 +67,7 @@ public class Shooter extends SubsystemBase {
                         .withMotionMagicAcceleration(250)
                         .withMotionMagicJerk(2500));
 
-        ShooterConfig_U = new TalonFXConfiguration()
+        motorCfg_Shooter_U = new TalonFXConfiguration()
                 .withCurrentLimits(
                         new CurrentLimitsConfigs()
                                 .withSupplyCurrentLimit(40)
@@ -89,16 +89,14 @@ public class Shooter extends SubsystemBase {
                 // .withClosedLoopRamps(new ClosedLoopRampsConfigs()
                 // .withTorqueClosedLoopRampPeriod(0.3))
                 .withMotionMagic(new MotionMagicConfigs()
-                        .withMotionMagicCruiseVelocity(16)
                         .withMotionMagicAcceleration(250)
                         .withMotionMagicJerk(2500));
 
-        m_Shooter_D.getConfigurator().apply(ShooterConfig_D);
-        m_Shooter_U.getConfigurator().apply(ShooterConfig_U);
-
+        m_Shooter_D.getConfigurator().apply(motorCfg_Shooter_D);
+        m_Shooter_U.getConfigurator().apply(motorCfg_Shooter_U);
     }
 
-    public void setVoltage(double voltage) {
+    private void setVoltage(double voltage) {
         m_Shooter_D.setControl(voltageRequest.withOutput(voltage));
         m_Shooter_U.setControl(voltageRequest.withOutput(voltage));
     }
@@ -118,15 +116,15 @@ public class Shooter extends SubsystemBase {
     }
 
     public void shoot_autoaim() {
-        setMagicVelocity(shooter_autoaim_target, 300);
+        setMagicVelocity(shooter_speaker_target, 300);
     }
 
     public void shoot_notepass() {
-        setMagicVelocity(shooter_notepass_target, 600);
+        setMagicVelocity(shooter_notepass_target, 300);
     }
 
     public boolean speed_ready_autoaim() {
-        return speed_ready(shooter_autoaim_target);
+        return speed_ready(shooter_speaker_target);
     }
 
     public boolean speed_ready_notepass() {
@@ -142,7 +140,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public void shoot_break() {
-        setMagicVelocity(0, 300);
+        setMagicVelocity(0, 100);
         break_flag = true;
     }
 
@@ -170,7 +168,7 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         // This method will be called once per scheduler run
         if (break_flag) {
-            if (m_Shooter_D.getVelocity().getValueAsDouble() < 1) {
+            if (Math.abs(m_Shooter_D.getVelocity().getValueAsDouble()) < 1) {
                 break_flag = false;
                 stop();
             }

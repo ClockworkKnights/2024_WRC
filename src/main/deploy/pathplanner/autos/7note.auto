@@ -22,6 +22,12 @@
           "data": {
             "pathName": "3near_to_far1"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "far1_to_far2"
+          }
         }
       ]
     }

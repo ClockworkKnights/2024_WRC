@@ -13,9 +13,9 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -33,7 +33,7 @@ public class Intake extends SubsystemBase {
 
     private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
     private final NetworkTable intakeStats = inst.getTable("Intake");
-    private final StringPublisher pub_note_state = intakeStats.getStringTopic("Note State").publish();
+    private final BooleanPublisher pub_note_state = intakeStats.getBooleanTopic("Note State").publish();
 
     public enum State {
         UNKNOWN,
@@ -70,7 +70,7 @@ public class Intake extends SubsystemBase {
         configure();
         state = State.UNKNOWN;
         note_state = NoteState.UNKNOWN;
-        pub_note_state.set("Unknown");
+        pub_note_state.set(false);
     }
 
     public void configure() {
@@ -151,7 +151,7 @@ public class Intake extends SubsystemBase {
             wait_current_unstable = false;
         } else if (Shooter.get_speed() >= 10) {
             note_state = NoteState.EMPTY;
-            pub_note_state.set("No");
+            pub_note_state.set(false);
             current_sample_index = 0;
             current_sample = new double[10];
             current_stable_A = 0;
@@ -209,8 +209,11 @@ public class Intake extends SubsystemBase {
     }
 
     public State getState() {
-        // System.out.println("Intake State: " + state);
         return state;
+    }
+
+    public NoteState getGuessedNoteState() {
+        return note_state;
     }
 
     public void stop() {
@@ -226,9 +229,6 @@ public class Intake extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // This method will be called once per scheduler run
-        // System.out.println("Intake State: " + state);
-
         if (state == State.EATING) {
             current_sample[current_sample_index % current_sample_size] = m_Intake_L.getSupplyCurrent()
                     .getValueAsDouble();
@@ -249,23 +249,23 @@ public class Intake extends SubsystemBase {
                     if (current_stable_A == 0) {
                         current_stable_A = current_avg;
                         wait_current_unstable = true;
-                        System.out.println("Current A: " + current_stable_A);
+                        // System.out.println("Current A: " + current_stable_A);
                     } else if (current_stable_A != 0) {
                         current_stable_B = current_avg;
                         wait_current_unstable = true;
                         if (current_stable_B - current_stable_A > 0.5) {
                             note_state = NoteState.FULL;
-                            pub_note_state.set("Yes");
+                            pub_note_state.set(true);
                             if (auto_stop) {
                                 reverse_once_pos(0);
                             }
                         }
-                        System.out.println("Current B: " + current_stable_B);
+                        // System.out.println("Current B: " + current_stable_B);
                     }
                 }
                 if (wait_current_unstable && current_std > 0.5) {
                     wait_current_unstable = false;
-                    System.out.println("Current changing");
+                    // System.out.println("Current changing");
                 }
             }
         }
@@ -287,18 +287,15 @@ public class Intake extends SubsystemBase {
             if (current_sample_index > current_sample_size) {
                 if (current_std < 0.1 && current_avg < 10 && current_avg > 3) {
                     note_state = NoteState.EMPTY;
-                    pub_note_state.set("No");
+                    pub_note_state.set(false);
                     if (auto_stop) {
                         stop();
                     }
-
                 }
             }
         }
 
         if (state == State.POS_WAIT_STOP) {
-            // System.out.println("Time to stop: " + time_to_stop + " Current time: " +
-            // Timer.getFPGATimestamp());
             if (Timer.getFPGATimestamp() > time_to_stop) {
                 reverse_once_pos(1);
                 time_to_stop = Timer.getFPGATimestamp() + 0.3;
@@ -307,9 +304,10 @@ public class Intake extends SubsystemBase {
         } else if (state == State.POS_WAIT_STOP_2) {
             if (Timer.getFPGATimestamp() > time_to_stop) {
                 stop();
+                m_Intake_L.setPosition(0);
+                m_Intake_R.setPosition(0);
                 state = State.EATED_REVERSED;
             }
         }
-        // System.out.println(state);
     }
 }

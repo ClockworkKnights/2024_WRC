@@ -7,12 +7,14 @@ import frc.robot.RobotContainer;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Swerve;
 
 public class AimShoot extends Command {
 
     private final Shooter shooter;
     private final Arm arm;
     private final Intake intake;
+    private final Swerve swerve;
 
     private enum State {
         INTAKE_REVERSE,
@@ -27,21 +29,21 @@ public class AimShoot extends Command {
 
     private State state = State.FINISHED;
 
+    public static boolean running = false;
+
     public AimShoot() {
         // Use addRequirements() here to declare subsystem dependencies.
         shooter = RobotContainer.shooter;
         arm = RobotContainer.arm;
         intake = RobotContainer.intake;
-        addRequirements(shooter, arm, intake);
+        swerve = RobotContainer.drivetrain;
+        // addRequirements(shooter, arm, intake);
         state = State.FINISHED;
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        // Stop everything
-        shooter.stop();
-        intake.stop();
 
         // Reverse the intake
         if (intake.getState() != Intake.State.POS_WAIT_STOP && intake.getState() != Intake.State.EATED_REVERSED) {
@@ -50,6 +52,7 @@ public class AimShoot extends Command {
         } else {
             state = State.ARM_UP;
         }
+        running = true;
     }
 
     // Called every time the scheduler runs while the command is scheduled.
@@ -69,7 +72,17 @@ public class AimShoot extends Command {
                 break;
             case SHOOTER_SHOOT:
                 shooter.shoot_autoaim();
-                if (shooter.speed_ready_autoaim() && RobotController.getBatteryVoltage() > 10.5) {
+                
+                double deg_now = swerve.getPose().getRotation().getDegrees();
+                double deg_target = swerve.speaker_yaw_setpoint;
+                double deg_error = deg_target - deg_now;
+                while (deg_error > 180) {
+                    deg_error -= 360;
+                }
+                while (deg_error < -180) {
+                    deg_error += 360;
+                }
+                if (shooter.speed_ready_autoaim() && RobotController.getBatteryVoltage() > 10.5 && Math.abs(deg_error) < 3) {
                     state = State.INTAKE_DELIVER;
                     intake.eat_volt(10);
                     timer.reset();
@@ -100,6 +113,7 @@ public class AimShoot extends Command {
         shooter.shoot_break();
         arm.arm_down();
         intake.stop();
+        running = false;
     }
 
     // Returns true when the command should end.

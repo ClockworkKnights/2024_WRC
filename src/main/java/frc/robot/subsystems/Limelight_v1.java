@@ -5,33 +5,32 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
-import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.generated.TunerConstants;
 
+// Auto update swerve odometry with limelight data
 public class Limelight_v1 extends SubsystemBase {
-
-    public static boolean vision_yaw = false;
+    public static boolean vision_enabled = true;
+    public static boolean yaw_correction_enabled = false;
 
     Swerve m_swerve = TunerConstants.DriveTrain;
-    Pigeon2 m_gyro = new Pigeon2(20, "canivore");
+    Pigeon2 m_gyro = m_swerve.getPigeon2();
 
-    private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
-    private final NetworkTable table = inst.getTable("Pose");
-    private final DoubleArrayPublisher limelightPub = table.getDoubleArrayTopic("limelight").publish();
+    private final DoubleArrayPublisher limelightPub = NetworkTableInstance.getDefault()
+            .getTable("Pose").getDoubleArrayTopic("limelight")
+            .publish();
 
+    private static boolean need_first_pose = true;
     private Pose2d m_lastPose = new Pose2d();
-
-    private static boolean first_pose = true;
 
     public Limelight_v1() {
     }
 
     @Override
     public void periodic() {
-        boolean doRejectUpdate = false;
+        boolean doRejectUpdate = !vision_enabled;
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
         if (mt1.tagCount == 1 && mt1.rawFiducials.length == 1) {
             if (mt1.rawFiducials[0].ambiguity > .7) {
@@ -55,12 +54,12 @@ public class Limelight_v1 extends SubsystemBase {
             double dev_amb = Math.exp(7.2861 * mt1.rawFiducials[0].ambiguity) * 0.5818;
             double dev = Math.min(dev_dist, dev_amb);
             double dev_yaw = dev;
-            if (first_pose) {
+            if (need_first_pose) {
                 dev = 0.001;
                 dev_yaw = 9;
-                first_pose = false;
+                need_first_pose = false;
             }
-            if (vision_yaw) {
+            if (yaw_correction_enabled) {
                 m_swerve.setVisionMeasurementStdDevs(VecBuilder.fill(dev, dev, dev_yaw));
                 m_swerve.addVisionMeasurement(
                         new Pose2d(pose.getX(), pose.getY(),

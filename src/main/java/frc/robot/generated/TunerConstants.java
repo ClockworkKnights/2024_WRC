@@ -2,6 +2,7 @@ package frc.robot.generated;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -65,7 +66,11 @@ public class TunerConstants {
                             // impacting performance.
                             .withStatorCurrentLimit(40)
                             .withStatorCurrentLimitEnable(false)
-                            .withSupplyCurrentLimitEnable(false));
+                            .withSupplyCurrentLimitEnable(false))
+            .withMotionMagic(new MotionMagicConfigs()
+                    .withMotionMagicAcceleration(600) // TODO
+                    .withMotionMagicJerk(2000) // TODO
+            );
     private static final CANcoderConfiguration cancoderInitialConfigs = new CANcoderConfiguration();
     // Configs for the Pigeon 2; leave this null to skip applying Pigeon 2 configs
     private static final Pigeon2Configuration pigeonConfigs = null;

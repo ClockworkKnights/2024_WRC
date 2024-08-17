@@ -1,19 +1,31 @@
 package frc.robot.commands;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Swerve;
+import frc.robot.subsystems.Swerve.AimMode;
 
 public class DoAmp extends Command {
 
     private final Shooter shooter;
     private final Arm arm;
     private final Intake intake;
+    private final Swerve swerve;
+
+    public static boolean enable_aim = false;
 
     private enum State {
+        GOTO_FAR_CHECKPOINT,
+        GOTO_WALL,
         ARM_UP,
         SHOOTER_SHOOT,
         WAIT_ARM,
@@ -21,6 +33,11 @@ public class DoAmp extends Command {
         ARM_DOWN,
         FINISHED,
     }
+
+    private final Pose3d BlueAllianceAmpFar = new Pose3d(72.5 * 0.0254, 323.00 * 0.0254, 53.38 * 0.0254, null);
+    private final Pose3d RedAllianceAmpFar = new Pose3d(578.77 * 0.0254, 323.00 * 0.0254, 53.38 * 0.0254, null);
+
+    private Pose3d AmpTarget = BlueAllianceAmpFar;
 
     private Timer timer = new Timer();
 
@@ -31,20 +48,35 @@ public class DoAmp extends Command {
         shooter = RobotContainer.shooter;
         arm = RobotContainer.arm;
         intake = RobotContainer.intake;
-        addRequirements(shooter, arm, intake);
+        swerve = RobotContainer.drivetrain;
+        // addRequirements(shooter, arm, intake);
         state = State.FINISHED;
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        arm.arm_pos_magic(ARM_STAGE_1, 100, 300, 900);
-        shooter.shoot_break();
+        // Stop all subsystems
+        shooter.stop();
         intake.stop();
-        if (intake.getState() != Intake.State.EATED_REVERSED) {
-            intake.reverse_once();
+        arm.stop();
+        state = State.GOTO_FAR_CHECKPOINT;
+        // Set target
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isEmpty() || !enable_aim) {
+            // Empty alliance, no drivetrain movement
+            arm.arm_pos_magic(ARM_STAGE_1, 100, 300, 900);
+            state = State.ARM_UP;
+            return;
+        } else {
+            AmpTarget = alliance.get() == DriverStation.Alliance.Red ? RedAllianceAmpFar : BlueAllianceAmpFar;
         }
-        state = State.ARM_UP;
+        // Too far, abort
+        var pose = swerve.getPose();
+        if (pose.getTranslation().getDistance(AmpTarget.getTranslation().toTranslation2d()) > 3) {
+            state = State.FINISHED;
+            return;
+        }
     }
 
     private final double ARM_STAGE_1 = 12;
@@ -53,10 +85,45 @@ public class DoAmp extends Command {
     private final double SHOOTER_SPEED = 11;
     private final double SHOOTER_ACCEL = 600;
 
-    // Called every time the scheduler runs while the command is scheduled.
+    private void update_swerve_far_checkpoint() {
+        RobotContainer.drivetrain.aim_mode = AimMode.AMP;
+        RobotContainer.drivetrain.amp_x_setpoint = AmpTarget.getTranslation().getX();
+        RobotContainer.drivetrain.amp_y_setpoint = AmpTarget.getTranslation().getY() - 1;
+        RobotContainer.drivetrain.amp_yaw_setpoint = Math.PI/2;
+    }
+
+    private boolean at_far_checkpoint() {
+        var pose = swerve.getPose();
+        return Math.abs(pose.getTranslation().getY() - AmpTarget.getTranslation().getY() + 1) < 0.1
+        && Math.abs(pose.getTranslation().getX() - AmpTarget.getTranslation().getX()) < 0.05
+        && Math.abs(pose.getRotation().getDegrees() - 90) < 4;
+    }
+
+    private void update_swerve_goto_wall() {
+        RobotContainer.drivetrain.aim_mode = AimMode.AMP;
+        RobotContainer.drivetrain.amp_x_setpoint = 0.5;
+        RobotContainer.drivetrain.amp_y_setpoint = 0.5;
+        RobotContainer.drivetrain.amp_yaw_setpoint = 0;
+    }
+
+    private boolean at_wall() {
+        return true;
+    }
+
     @Override
     public void execute() {
         switch (state) {
+            case GOTO_FAR_CHECKPOINT:
+                update_swerve_far_checkpoint();
+                if (at_far_checkpoint()) {
+                    state = State.GOTO_WALL;
+                }
+            case GOTO_WALL:
+                update_swerve_goto_wall();
+                if (at_wall()) {
+                    arm.arm_pos_magic(ARM_STAGE_1, 100, 300, 900);
+                    state = State.ARM_UP;
+                }
             case ARM_UP:
                 if (arm.get_angle() > ARM_STAGE_1 - 3) {
                     state = State.SHOOTER_SHOOT;

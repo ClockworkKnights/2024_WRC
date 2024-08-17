@@ -12,6 +12,9 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.Limelight_v1;
+import frc.robot.subsystems.PhotonVision;
+import frc.robot.subsystems.Swerve;
 
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
@@ -23,7 +26,7 @@ public class Robot extends TimedRobot {
         m_robotContainer = new RobotContainer();
         // PortForwarding for Limelight during USB connection
         // for (int port = 5801; port <= 5809; port++) {
-        //     PortForwarder.add(port, "limelight.local", port);
+        // PortForwarder.add(port, "limelight.local", port);
         // }
         PortForwarder.add(5801, "limelight.local", 5801);
         FollowPathCommand.warmupCommand().schedule();
@@ -36,6 +39,13 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledInit() {
+        Limelight_v1.vision_enabled = true;
+        PhotonVision.vision_enabled = true;
+
+        RobotContainer.drivetrain.aim_mode = Swerve.AimMode.NONE;
+        RobotContainer.arm.stop();
+        RobotContainer.shooter.stop();
+        RobotContainer.intake.stop();
     }
 
     @Override
@@ -50,6 +60,9 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
+        Limelight_v1.vision_enabled = false;
+        PhotonVision.vision_enabled = false;
+
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
         if (m_autonomousCommand != null) {
@@ -70,6 +83,10 @@ public class Robot extends TimedRobot {
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();
         }
+
+        Limelight_v1.vision_enabled = true;
+        PhotonVision.vision_enabled = true;
+
     }
 
     @Override
