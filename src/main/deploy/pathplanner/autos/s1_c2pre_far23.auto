@@ -1,0 +1,37 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 0.45,
+      "y": 7.1
+    },
+    "rotation": 179.79415611205235
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "s1_c2"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "c2_far2_c2_stable"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "c2_far3_c2_ud"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": true
+}

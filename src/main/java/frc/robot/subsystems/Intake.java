@@ -13,9 +13,13 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.wpilibj2.command.Subsystem;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class Intake implements Subsystem {
+public class Intake extends SubsystemBase {
     TalonFX m_Intake_L;
     TalonFX m_Intake_R;
 
@@ -27,26 +31,46 @@ public class Intake implements Subsystem {
     PositionVoltage positionRequest_R;
     VoltageOut voltageRequest;
 
+    private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
+    private final NetworkTable intakeStats = inst.getTable("Intake");
+    private final BooleanPublisher pub_note_state = intakeStats.getBooleanTopic("Note State").publish();
+
     public enum State {
         UNKNOWN,
-        EATED,
-        REVERSED,
+        EATING,
+        POS_WAIT_STOP,
+        POS_WAIT_STOP_2,
+        EATED_REVERSED,
+        POPPING,
         POPPED,
     }
 
+    public enum NoteState {
+        UNKNOWN,
+        FULL,
+        EMPTY,
+    }
+
+    public double time_to_stop = 0;
+
     private State state;
+    private NoteState note_state;
+
+    public boolean auto_stop = false;
 
     public Intake() {
         m_Intake_L = new TalonFX(14, "canivore");
         m_Intake_R = new TalonFX(15, "canivore");
 
-        // velocityRequest = new VelocityTorqueCurrentFOC(0);
+        velocityRequest = new VelocityTorqueCurrentFOC(0);
         voltageRequest = new VoltageOut(0);
         positionRequest_L = new PositionVoltage(0);
         positionRequest_R = new PositionVoltage(0);
 
         configure();
         state = State.UNKNOWN;
+        note_state = NoteState.UNKNOWN;
+        pub_note_state.set(false);
     }
 
     public void configure() {
@@ -111,19 +135,59 @@ public class Intake implements Subsystem {
         return m_Intake_R.getPosition().getValueAsDouble();
     }
 
-    // public void setVelocity(double velocity) {
-    // m_Intake_L.setControl(velocityRequest.withVelocity(velocity));
-    // m_Intake_R.setControl(velocityRequest.withVelocity(velocity));
-    // }
+    public void setVelocity(double velocity) {
+        m_Intake_L.setControl(velocityRequest.withVelocity(velocity));
+        m_Intake_R.setControl(velocityRequest.withVelocity(velocity));
+    }
 
     public void eat_in() {
-        setVoltage(5);
-        state = State.EATED;
+        setVoltage(10);
+        if (state != State.EATING && Shooter.get_speed() < 10) {
+            state = State.EATING;
+            current_sample_index = 0;
+            current_sample = new double[10];
+            current_stable_A = 0;
+            current_stable_B = 0;
+            wait_current_unstable = false;
+        } else if (Shooter.get_speed() >= 10) {
+            note_state = NoteState.EMPTY;
+            pub_note_state.set(false);
+            current_sample_index = 0;
+            current_sample = new double[10];
+            current_stable_A = 0;
+            current_stable_B = 0;
+            wait_current_unstable = false;
+        }
+    }
+
+    public void eat_volt(double volt) {
+        setVoltage(volt);
+        if (volt != 0) {
+            state = volt > 0 ? State.EATING : State.POPPING;
+        } else {
+            state = State.UNKNOWN;
+        }
+    }
+
+    public void eat_stop() {
+        if (state == State.EATING) {
+            setVelocity(0);
+            state = State.POS_WAIT_STOP;
+        } else {
+            stop();
+        }
     }
 
     public void eat_out() {
         setVoltage(-5);
-        state = State.POPPED;
+        if (state != State.POPPING) {
+            state = State.POPPING;
+            current_sample_index = 0;
+            current_sample = new double[10];
+            current_stable_A = 0;
+            current_stable_B = 0;
+            wait_current_unstable = false;
+        }
     }
 
     public void reverse_once() {
@@ -131,15 +195,119 @@ public class Intake implements Subsystem {
         var positionNow_R = m_Intake_R.getPosition();
         m_Intake_L.setControl(positionRequest_L.withPosition(positionNow_L.getValue() - 1));
         m_Intake_R.setControl(positionRequest_R.withPosition(positionNow_R.getValue() - 1));
-        state = State.REVERSED;
+        state = State.POS_WAIT_STOP_2;
+        time_to_stop = Timer.getFPGATimestamp() + 0.3;
+    }
+
+    public void reverse_once_pos(double pos) {
+        var positionNow_L = m_Intake_L.getPosition();
+        var positionNow_R = m_Intake_R.getPosition();
+        m_Intake_L.setControl(positionRequest_L.withPosition(positionNow_L.getValue() - pos));
+        m_Intake_R.setControl(positionRequest_R.withPosition(positionNow_R.getValue() - pos));
+        time_to_stop = Timer.getFPGATimestamp() + 0.3;
+        state = State.POS_WAIT_STOP_2;
     }
 
     public State getState() {
         return state;
     }
 
+    public NoteState getGuessedNoteState() {
+        return note_state;
+    }
+
     public void stop() {
         setVoltage(0);
     }
 
+    private final int current_sample_size = 3;
+    private double[] current_sample = new double[current_sample_size];
+    private int current_sample_index = 0;
+    private double current_stable_A = 0;
+    private double current_stable_B = 0;
+    private boolean wait_current_unstable = false;
+
+    @Override
+    public void periodic() {
+        if (state == State.EATING) {
+            current_sample[current_sample_index % current_sample_size] = m_Intake_L.getSupplyCurrent()
+                    .getValueAsDouble();
+            current_sample_index++;
+            // current avg and std
+            double current_avg = 0;
+            double current_std = 0;
+            for (int i = 0; i < current_sample_size; i++) {
+                current_avg += current_sample[i];
+            }
+            current_avg /= current_sample_size;
+            for (int i = 0; i < current_sample_size; i++) {
+                current_std += Math.pow(current_sample[i] - current_avg, 2);
+            }
+            current_std = Math.sqrt(current_std / current_sample_size);
+            if (current_sample_index > current_sample_size) {
+                if (current_std < 0.1 && !wait_current_unstable) {
+                    if (current_stable_A == 0) {
+                        current_stable_A = current_avg;
+                        wait_current_unstable = true;
+                        // System.out.println("Current A: " + current_stable_A);
+                    } else if (current_stable_A != 0) {
+                        current_stable_B = current_avg;
+                        wait_current_unstable = true;
+                        if (current_stable_B - current_stable_A > 0.5) {
+                            note_state = NoteState.FULL;
+                            pub_note_state.set(true);
+                            if (auto_stop) {
+                                reverse_once_pos(0);
+                            }
+                        }
+                        // System.out.println("Current B: " + current_stable_B);
+                    }
+                }
+                if (wait_current_unstable && current_std > 0.5) {
+                    wait_current_unstable = false;
+                    // System.out.println("Current changing");
+                }
+            }
+        }
+        if (state == State.POPPING) {
+            current_sample[current_sample_index % current_sample_size] = m_Intake_L.getStatorCurrent()
+                    .getValueAsDouble();
+            current_sample_index++;
+            // current avg and std
+            double current_avg = 0;
+            double current_std = 0;
+            for (int i = 0; i < current_sample_size; i++) {
+                current_avg += current_sample[i];
+            }
+            current_avg /= current_sample_size;
+            for (int i = 0; i < current_sample_size; i++) {
+                current_std += Math.pow(current_sample[i] - current_avg, 2);
+            }
+            current_std = Math.sqrt(current_std / current_sample_size);
+            if (current_sample_index > current_sample_size) {
+                if (current_std < 0.1 && current_avg < 10 && current_avg > 3) {
+                    note_state = NoteState.EMPTY;
+                    pub_note_state.set(false);
+                    if (auto_stop) {
+                        stop();
+                    }
+                }
+            }
+        }
+
+        if (state == State.POS_WAIT_STOP) {
+            if (Timer.getFPGATimestamp() > time_to_stop) {
+                reverse_once_pos(1);
+                time_to_stop = Timer.getFPGATimestamp() + 0.3;
+                state = State.POS_WAIT_STOP_2;
+            }
+        } else if (state == State.POS_WAIT_STOP_2) {
+            if (Timer.getFPGATimestamp() > time_to_stop) {
+                stop();
+                m_Intake_L.setPosition(0);
+                m_Intake_R.setPosition(0);
+                state = State.EATED_REVERSED;
+            }
+        }
+    }
 }
