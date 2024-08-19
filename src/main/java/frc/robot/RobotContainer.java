@@ -26,11 +26,12 @@ import frc.robot.subsystems.Limelight_v1;
 import frc.robot.subsystems.PhotonVision;
 import frc.robot.subsystems.Aimer;
 import frc.robot.subsystems.Arm;
+import frc.robot.subsystems.Candle;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Shooter;
 import frc.robot.commands.AimPrepare;
 import frc.robot.commands.AimShoot;
-import frc.robot.commands.DoAmp;
+import frc.robot.commands.DoAmpNew;
 import frc.robot.commands.NotePass;
 
 public class RobotContainer {
@@ -46,13 +47,14 @@ public class RobotContainer {
     public static final Aimer aimer = new Aimer();
     public static final PhotonVision photonVision = new PhotonVision();
     public static final Climber climber = new Climber();
+    public static final Candle candle = new Candle();
 
     private final SendableChooser<Command> autoChooser;
     private final Field2d field = new Field2d();
 
     private Command AimPrepare = new AimPrepare();
     private Command AimShoot = new AimShoot();
-    private Command DoAmp = new DoAmp();
+    private Command DoAmp = new DoAmpNew();
     private Command NotePass = new NotePass();
 
     private final Telemetry logger = new Telemetry(Swerve.MaxSpeed);
@@ -108,26 +110,30 @@ public class RobotContainer {
         // Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))));
 
         // DEBUG - Climber
-        // joystick.square().onTrue(Commands.runOnce(() -> climber.climb_up()));
-        // joystick.cross().onTrue(Commands.runOnce(() -> climber.climb_down()));
-        // joystick.square().onFalse(Commands.runOnce(() -> climber.stop()));
-        // joystick.cross().onFalse(Commands.runOnce(() -> climber.stop()));
+        joystick.povUp().onTrue(Commands.runOnce(() -> climber.climb_up()));
+        joystick.povDown().onTrue(Commands.runOnce(() -> climber.climb_down()));
+        joystick.povUp().onFalse(Commands.runOnce(() -> climber.stop()));
+        joystick.povDown().onFalse(Commands.runOnce(() -> climber.stop()));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
 
     public RobotContainer() {
 
-        NamedCommands.registerCommand("arm_preset_preload", Commands.runOnce(() -> arm.setPosition(9.3)));
+        NamedCommands.registerCommand("arm_preset_preload", Commands.runOnce(() -> arm.setPosition(9.8)));
         NamedCommands.registerCommand("shooter_preset_preload", Commands.runOnce(() -> shooter.shoot_out(55)));
         NamedCommands.registerCommand("eat_in", Commands.runOnce(() -> intake.eat_volt(9)));
         NamedCommands.registerCommand("eat_stop", Commands.runOnce(() -> intake.stop()));
-        NamedCommands.registerCommand("arm_preset_c1", Commands.runOnce(() -> arm.setPosition(8.7)));
-        NamedCommands.registerCommand("arm_preset_c2", Commands.runOnce(() -> arm.setPosition(6.5)));
+        NamedCommands.registerCommand("arm_preset_c1", Commands.runOnce(() -> arm.setPosition(9.35)));
+        NamedCommands.registerCommand("arm_preset_c2", Commands.runOnce(() -> arm.setPosition(7.33)));
+        NamedCommands.registerCommand("arm_preset_c2_v2", Commands.runOnce(() -> arm.setPosition(6.8)));
         NamedCommands.registerCommand("shooter_stop", Commands.runOnce(() -> shooter.shoot_break()));
         NamedCommands.registerCommand("arm_stop", Commands.runOnce(() -> arm.stop()));
         NamedCommands.registerCommand("eat_reverse_once", Commands.runOnce(() -> intake.reverse_once_pos(0)));
         NamedCommands.registerCommand("shooter_preset_c2", Commands.runOnce(() -> shooter.shoot_out(78)));
+        NamedCommands.registerCommand("arm_preset_c3", Commands.runOnce(() -> arm.setPosition(7.44)));
+        NamedCommands.registerCommand("arm_preset_c3_v2", Commands.runOnce(() -> arm.setPosition(7.0)));
+        NamedCommands.registerCommand("shooter_preset_c3", Commands.runOnce(() -> shooter.shoot_out(70)));
 
         // NamedCommands.registerCommand("arm_preset_preload", Commands.runOnce(() -> {
         // }));

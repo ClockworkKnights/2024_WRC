@@ -6,10 +6,15 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.shuffleboard.WidgetType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.generated.TunerConstants;
 
@@ -44,6 +49,14 @@ public class Aimer extends SubsystemBase {
             .publish();
     private final DoublePublisher notepassShooterTargetPub = tableNotePass.getDoubleTopic("Shooter Target").publish();
     private final DoublePublisher notepassYawPub = tableNotePass.getDoubleTopic("Yaw Target").publish();
+
+    private final ShuffleboardTab sbTab = Shuffleboard.getTab("Aimer");
+    private final GenericEntry sbDebugSpeakerAimer = sbTab.add("Speaker Debug Mode", false)
+            .withWidget(BuiltInWidgets.kToggleSwitch).getEntry();
+    private final GenericEntry sbSpeakerAngleTheo = sbTab.add("Speaker Angle Theo", 0).getEntry();
+    private final GenericEntry sbSpeakerAngleInput = sbTab.add("Speaker Angle Set", 0).getEntry();
+    private final GenericEntry sbSpeakerSpeedTheo = sbTab.add("Speaker Speed Theo", 0).getEntry();
+    private final GenericEntry sbSpeakerDistTheo = sbTab.add("Speaker Dist Theo", 0).getEntry();
 
     private final double gravity_g = 9.8;
 
@@ -83,6 +96,7 @@ public class Aimer extends SubsystemBase {
 
         double distance = Math.sqrt(Math.pow(target_x - swerve_x, 2) +
                 Math.pow(target_y - swerve_y, 2));
+        sbSpeakerDistTheo.setDouble(distance);
         double note_speed = 10; // TODO: m/s
         double note_time = distance / note_speed;
         double note_dx = note_time * swerve_vel_x;
@@ -117,27 +131,35 @@ public class Aimer extends SubsystemBase {
 
         double shooter_target = 40 + 8 * distance; // 40m/s + 0.5m/s/m * distance
 
-        double arm_angle = Math.atan2(target_height - 0.15 +
-                target_height_compensation,
-                Math.sqrt(Math.pow(target_x_new - swerve_x, 2) + Math.pow(target_y_new -
-                        swerve_y, 2)));
-        double arm_angle_deg = arm_angle * 180 / Math.PI + dist_angle_compensation;
-        if (shooter_target > 90) {
-            arm_angle_deg += (shooter_target - 90) / 8;
+        // double arm_angle = Math.atan2(target_height - 0.15 +
+        //         target_height_compensation,
+        //         Math.sqrt(Math.pow(target_x_new - swerve_x, 2) + Math.pow(target_y_new -
+        //                 swerve_y, 2)));
+        // double arm_angle_deg = arm_angle * 180 / Math.PI + dist_angle_compensation;
+        // // if (shooter_target > 90) {
+        // //     arm_angle_deg += (shooter_target - 90) / 8;
+        // // }
+        // double arm_sensor_target = arm_angle_deg * arm_90deg_rot / 90;
+        double x = distance;
+        double arm_sensor_target = -0.013233 *x*x*x*x + 0.065266 *x*x*x + 0.717571 *x*x - 6.275255 *x + 20.049852;
+
+        sbSpeakerAngleTheo.setDouble(arm_sensor_target);
+        arm_target_pub.set(arm_sensor_target);
+        if (sbDebugSpeakerAimer.getBoolean(false) && sbSpeakerAngleInput.getDouble(0) > 0) {
+            arm_sensor_target = sbSpeakerAngleInput.getDouble(arm_sensor_target);
         }
-        double arm_sensor_target = arm_angle_deg * arm_90deg_rot / 90;
+        Arm.arm_speaker_target = arm_sensor_target;
         // double x = distance;
         // double arm_sensor_target = 0.00910581 *x*x*x*x - 0.23298615 *x*x*x +
         // 2.17574395 *x*x - 9.45186811 *x + 22.19559391;
 
-        Arm.arm_speaker_target = arm_sensor_target;
-        arm_target_pub.set(arm_sensor_target);
 
         if (shooter_target > 90) {
             shooter_target = 90;
         }
         speakerDistPub.set(distance);
         Shooter.shooter_speaker_target = shooter_target;
+        sbSpeakerSpeedTheo.setDouble(shooter_target);
         shooter_target_pub.set(shooter_target);
     }
 

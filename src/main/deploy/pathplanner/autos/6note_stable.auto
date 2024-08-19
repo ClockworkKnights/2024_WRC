@@ -1,0 +1,37 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.324393630027771,
+      "y": 4.663147926330566
+    },
+    "rotation": 179.33578987594765
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "s4_near3_near1_stable"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "near1_far1_c2_stable"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "c2_far2_c2_stable"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": true
+}

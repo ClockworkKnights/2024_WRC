@@ -120,11 +120,11 @@ public class Swerve extends SwerveDrivetrain implements Subsystem {
     }
 
     public void resetPosition(Pose2d poseMeters) {
-        // SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
-        // for (int i = 0; i < 4; i++) {
-        //     modulePositions[i] = this.getModule(i).getCachedPosition();
-        // }
-        // this.m_odometry.resetPosition(this.getPigeon2().getRotation2d(), modulePositions, poseMeters);
+        SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
+        for (int i = 0; i < 4; i++) {
+            modulePositions[i] = this.getModule(i).getCachedPosition();
+        }
+        this.m_odometry.resetPosition(this.getPigeon2().getRotation2d(), modulePositions, poseMeters);
     }
 
     public void driveRobotRelative(ChassisSpeeds speeds) {
