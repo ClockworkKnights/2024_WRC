@@ -48,6 +48,10 @@ public class PhotonVision extends SubsystemBase {
     public void update_apriltag() {
         boolean doRejectUpdate = !vision_enabled;
         var result = cam_gray.getLatestResult();
+        if (result == null) {
+            gray_alive_pub.set(false);
+            return;
+        }
         var timestamp = result.getTimestampSeconds();
         if (Timer.getFPGATimestamp() - timestamp > 1) {
             gray_alive_pub.set(false);
@@ -106,6 +110,10 @@ public class PhotonVision extends SubsystemBase {
 
     public void update_note_detection() {
         var result = cam_color.getLatestResult();
+        if (result == null) {
+            color_alive_pub.set(false);
+            return;
+        }
         var results = result.getTargets();
         var timestamp = result.getTimestampSeconds();
         if (Timer.getFPGATimestamp() - timestamp > 1) {
