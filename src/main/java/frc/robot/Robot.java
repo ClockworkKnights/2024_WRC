@@ -28,7 +28,15 @@ public class Robot extends TimedRobot {
         // for (int port = 5801; port <= 5809; port++) {
         // PortForwarder.add(port, "limelight.local", port);
         // }
-        PortForwarder.add(5801, "limelight.local", 5801);
+        for (int port = 5800; port <= 5809; port++) {
+            PortForwarder.add(port, "limelight.local", port);
+        }
+        // PortForwarder.add(5802, "10.64.87.17", 5802);   
+        // PortForwarder.add(5802, "10.64.87.17", 5802);
+        // PortForwarder.add(1181, "10.64.87.17", 1181);
+        // PortForwarder.add(1186, "10.64.87.17", 1186);
+        // PortForwarder.add(5800, "photonvision-opi.local", 5800);
+
         FollowPathCommand.warmupCommand().schedule();
     }
 
