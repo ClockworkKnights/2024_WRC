@@ -55,6 +55,7 @@ public class Aimer extends SubsystemBase {
             .withWidget(BuiltInWidgets.kToggleSwitch).getEntry();
     private final GenericEntry sbSpeakerAngleTheo = sbTab.add("Speaker Angle Theo", 0).getEntry();
     private final GenericEntry sbSpeakerAngleInput = sbTab.add("Speaker Angle Set", 0).getEntry();
+    private final GenericEntry sbSpeakerAngleOffset = sbTab.add("Speaker Ang Offset Set", 0).getEntry();
     private final GenericEntry sbSpeakerSpeedTheo = sbTab.add("Speaker Speed Theo", 0).getEntry();
     private final GenericEntry sbSpeakerDistTheo = sbTab.add("Speaker Dist Theo", 0).getEntry();
 
@@ -141,12 +142,18 @@ public class Aimer extends SubsystemBase {
         // // }
         // double arm_sensor_target = arm_angle_deg * arm_90deg_rot / 90;
         double x = distance;
-        double arm_sensor_target = -0.013233 *x*x*x*x + 0.065266 *x*x*x + 0.717571 *x*x - 6.275255 *x + 20.049852;
+        // 8/19
+        // double arm_sensor_target = -0.013233 *x*x*x*x + 0.065266 *x*x*x + 0.717571 *x*x - 6.275255 *x + 20.049852;
+        // 8/22 make it higher
+        double arm_sensor_target = 0.396076 *x*x - 4.384524 *x + 18.385368;
 
         sbSpeakerAngleTheo.setDouble(arm_sensor_target);
         arm_target_pub.set(arm_sensor_target);
         if (sbDebugSpeakerAimer.getBoolean(false) && sbSpeakerAngleInput.getDouble(0) > 0) {
             arm_sensor_target = sbSpeakerAngleInput.getDouble(arm_sensor_target);
+        }
+        if (!sbDebugSpeakerAimer.getBoolean(false)) {
+            arm_sensor_target += sbSpeakerAngleOffset.getDouble(0);
         }
         Arm.arm_speaker_target = arm_sensor_target;
         // double x = distance;
